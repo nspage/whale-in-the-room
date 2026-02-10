@@ -3,12 +3,48 @@ import { api } from "./_generated/api";
 import { v } from "convex/values";
 
 const TRACKED_WALLETS = [
-  { address: "0x83d55acdc72027ed339d267eebaf9a41e47490d5", vertical: "DeFi", label: "DeFi Whale #1" },
-  { address: "0x3725bd4d175283108156c3f15f86e1c51266155d", vertical: "DeFi", label: "DeFi Whale #2" },
-  { address: "0x63242a4ea82847b20e506b63b0e2e2eff0cc6cb0", vertical: "DeFi", label: "DeFi Whale #3" },
-  { address: "0x3f0296bf652e19bca772ec3df08b32732f93014a", vertical: "AI", label: "AI Whale #1" },
-  { address: "0x9aec2cb83351bb03bab237985eff6464d2c58633", vertical: "AI", label: "AI Whale #2" },
-  { address: "0x7142956e69478524769fdf48b008ac9ce8fd74f2", vertical: "AI", label: "AI Whale #3" },
+  { 
+    address: "0x83d55acdc72027ed339d267eebaf9a41e47490d5", 
+    vertical: "DeFi", 
+    label: "DeFi Whale #1",
+    name: "vitalik.eth",
+    persona: "DeFi Architect & OG"
+  },
+  { 
+    address: "0x3725bd4d175283108156c3f15f86e1c51266155d", 
+    vertical: "DeFi", 
+    label: "DeFi Whale #2",
+    name: "jesse.base.eth",
+    persona: "Base Ecosystem Lead"
+  },
+  { 
+    address: "0x63242a4ea82847b20e506b63b0e2e2eff0cc6cb0", 
+    vertical: "DeFi", 
+    label: "DeFi Whale #3",
+    name: "whale_alpha.fc",
+    persona: "High-Freq Yield Farmer"
+  },
+  { 
+    address: "0x3f0296bf652e19bca772ec3df08b32732f93014a", 
+    vertical: "AI", 
+    label: "AI Whale #1",
+    name: "ai_visionary.eth",
+    persona: "AI Agent Collector"
+  },
+  { 
+    address: "0x9aec2cb83351bb03bab237985eff6464d2c58633", 
+    vertical: "AI", 
+    label: "AI Whale #2",
+    name: "bot_master.eth",
+    persona: "MEV & AI Integration Expert"
+  },
+  { 
+    address: "0x7142956e69478524769fdf48b008ac9ce8fd74f2", 
+    vertical: "AI", 
+    label: "AI Whale #3",
+    name: "neural_net.eth",
+    persona: "DePIN & AI Infrastructure"
+  },
 ] as const;
 
 export const pollWhaleActivity = action({
@@ -20,8 +56,66 @@ export const pollWhaleActivity = action({
       throw new Error("ALLIUM_API_KEY or ALLIUM_QUERY_ID environment variable is not set");
     }
 
+    // 1. Batch Fetch Farcaster Identities for all tracked wallets
+    const fcMap = new Map<string, { username?: string; display_name?: string; follower_count?: number }>();
+    try {
+      const addresses = TRACKED_WALLETS.map(w => `'${w.address.toLowerCase()}'`).join(',');
+      const sql = `
+        SELECT 
+          custody_address,
+          verified_addresses,
+          fname as username, 
+          display_name, 
+          follower_count 
+        FROM base.social.farcaster_profiles 
+        WHERE custody_address IN (${addresses})
+           OR verified_addresses LIKE ANY (ARRAY[${TRACKED_WALLETS.map(w => `'%${w.address.toLowerCase()}%'`).join(',')}])
+      `;
+
+      const sqlRunRes = await fetch(\`https://api.allium.so/api/v1/explorer/queries/\${queryId}/run-async\`, {
+        method: "POST",
+        headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ parameters: { sql_query: sql } }),
+      });
+
+      if (sqlRunRes.ok) {
+        const run = await sqlRunRes.json();
+        const runId = run.run_id;
+
+        for (let i = 0; i < 10; i++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const statusRes = await fetch(\`https://api.allium.so/api/v1/explorer/query-runs/\${runId}/status\`, {
+            headers: { "X-API-KEY": apiKey }
+          });
+          const status = (await statusRes.text()).replace(/"/g, '');
+          
+          if (status === 'success') {
+            const resultRes = await fetch(\`https://api.allium.so/api/v1/explorer/query-runs/\${runId}/results?f=json\`, {
+              headers: { "X-API-KEY": apiKey }
+            });
+            const resultData = await resultRes.json();
+            if (resultData.data) {
+              for (const row of resultData.data) {
+                // Map back to our wallets (handle both custody and verified)
+                for (const wallet of TRACKED_WALLETS) {
+                  const addr = wallet.address.toLowerCase();
+                  if (row.custody_address?.toLowerCase() === addr || row.verified_addresses?.toLowerCase().includes(addr)) {
+                    fcMap.set(addr, row);
+                  }
+                }
+              }
+            }
+            break;
+          }
+          if (status === 'failed') break;
+        }
+      }
+    } catch (e) {
+      console.error("Batch Farcaster lookup failed:", e);
+    }
+
     for (const wallet of TRACKED_WALLETS) {
-      console.log(`Polling activities for ${wallet.label}...`);
+      console.log(\`Polling activities for \${wallet.name} (\${wallet.label})...\`);
 
       try {
         const response = await fetch("https://api.allium.so/api/v1/developer/wallet/transactions", {
@@ -40,61 +134,12 @@ export const pollWhaleActivity = action({
 
         const data = await response.json();
         const transactions = data.items || [];
+        const fc_info = fcMap.get(wallet.address.toLowerCase()) || {};
 
         for (const tx of transactions) {
-          // 1. Fetch Farcaster Identity via SQL
-          let fc_info: { username?: string; display_name?: string; follower_count?: number } = {};
-          
-          try {
-            const sql = `
-              SELECT 
-                fname as username, 
-                display_name, 
-                follower_count 
-              FROM base.social.farcaster_profiles 
-              WHERE custody_address = '${wallet.address.toLowerCase()}' 
-                 OR verified_addresses LIKE '%${wallet.address.toLowerCase()}%'
-              LIMIT 1
-            `;
-
-            const sqlRunRes = await fetch(`https://api.allium.so/api/v1/explorer/queries/${queryId}/run-async`, {
-              method: "POST",
-              headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-              body: JSON.stringify({ parameters: { sql_query: sql } }),
-            });
-
-            if (sqlRunRes.ok) {
-              const run = await sqlRunRes.json();
-              const runId = run.run_id;
-
-              // Simple poll for results (max 5 attempts for speed in cron)
-              for (let i = 0; i < 5; i++) {
-                await new Promise(r => setTimeout(r, 2000));
-                const statusRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/status`, {
-                  headers: { "X-API-KEY": apiKey }
-                });
-                const status = (await statusRes.text()).replace(/"/g, '');
-                
-                if (status === 'success') {
-                  const resultRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/results?f=json`, {
-                    headers: { "X-API-KEY": apiKey }
-                  });
-                  const resultData = await resultRes.json();
-                  if (resultData.data && resultData.data.length > 0) {
-                    fc_info = resultData.data[0];
-                  }
-                  break;
-                }
-                if (status === 'failed') break;
-              }
-            }
-          } catch (e) {
-            console.error("Farcaster lookup failed:", e);
-          }
-
           // 2. Add Signal
           await ctx.runMutation(api.signals.addSignal, {
-            id: `convex-${tx.hash.slice(0, 10)}`,
+            id: \`convex-\${tx.hash.slice(0, 10)}\`,
             type: "NEW_CONTRACT",
             wallet: wallet.address,
             vertical: wallet.vertical as "DeFi" | "AI" | "SocialFi",
@@ -105,8 +150,8 @@ export const pollWhaleActivity = action({
             is_first_mover: false,
             vertical_tag: wallet.vertical,
             common_neighbors: 0,
-            display_name: null,
-            persona: null,
+            display_name: wallet.name,
+            persona: wallet.persona,
             // Farcaster Data
             fc_username: fc_info.username,
             fc_display_name: fc_info.display_name,
@@ -118,7 +163,7 @@ export const pollWhaleActivity = action({
           });
         }
       } catch (error) {
-        console.error(`Error polling ${wallet.address}:`, error);
+        console.error(\`Error polling \${wallet.address}:\`, error);
       }
     }
   },

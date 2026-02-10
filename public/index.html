@@ -585,8 +585,8 @@
           { address: "0x3725bd4d175283108156c3f15f86e1c51266155d", vertical: "DeFi", label: "DeFi Whale #2", name: "jesse.base.eth", persona: "Base Ecosystem Lead" },
           { address: "0x63242a4ea82847b20e506b63b0e2e2eff0cc6cb0", vertical: "DeFi", label: "DeFi Whale #3", name: "whale_alpha.fc", persona: "High-Freq Yield Farmer" },
           { address: "0x3f0296bf652e19bca772ec3df08b32732f93014a", vertical: "AI", label: "AI Whale #1", name: "ai_visionary.eth", persona: "AI Agent Collector" },
-          { address: "0x9aec2cb83351bb03bab237985eff6464d2c58633", vertical: "AI", label: "AI Whale #2", name: "bot_master.eth", persona: "MEV & AI Expert" },
-          { address: "0x7142956e69478524769fdf48b008ac9ce8fd74f2", vertical: "AI", label: "AI Whale #3", name: "neural_net.eth", persona: "DePIN Infrastructure" },
+          { address: "0x9aec2cb83351bb03bab237985eff6464d2c58633", vertical: "AI", label: "AI Whale #2", name: "bot_master.eth", persona: "MEV & AI Integration Expert" },
+          { address: "0x7142956e69478524769fdf48b008ac9ce8fd74f2", vertical: "AI", label: "AI Whale #3", name: "neural_net.eth", persona: "DePIN & AI Infrastructure" },
         ];
 
         // ─── Convex Subscription ──────────────────────────────
@@ -671,6 +671,9 @@
                                     ${displayName} ${fire}
                                     ${firstBadge}
                                     ${kolBadge}
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; font-style: italic;">
+                                    ${s.persona || 'Active Whale'}
                                 </div>
                                 <div class="signal-meta">
                                     <span>Target: <a href="https://basescan.org/address/${s.target_contract}" target="_blank" style="color:inherit; text-decoration:none;">${s.target_contract.slice(0, 12)}...</a></span>
