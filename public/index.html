@@ -498,6 +498,37 @@
         .action-btn.share { border-color: #1da1f2; color: #1da1f2; }
         .action-btn.share:hover { background: rgba(29, 161, 242, 0.1); }
 
+        /* ─── Pending Activity Indicator ─────────────────── */
+        .pending-indicator {
+            display: none;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--accent-blue);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            animation: glow-pulse 2s infinite;
+            transition: all 0.2s;
+            position: sticky;
+            top: 20px;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+
+        .pending-indicator:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.01);
+        }
+
+        @keyframes glow-pulse {
+            0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); border-color: var(--accent-blue); }
+            100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
+        }
+
         .footer {
             margin-top: 80px;
             padding: 40px 0;
@@ -561,8 +592,14 @@
         <!-- Signal Feed -->
         <div class="section-header">
             <div class="section-title">🚨 Actionable Alpha Feed <span class="count-pill" id="signal-count">0</span>
+                <i style="font-weight: 400; font-size: 13px; color: var(--text-muted); margin-left: 12px; font-style: italic;">Interacting with cards will pause feed</i>
             </div>
         </div>
+        
+        <div id="pending-indicator" class="pending-indicator" onclick="resumeFeed()">
+            ⚡ <span id="pending-count">0</span> new signals incoming. Click to resume live updates.
+        </div>
+
         <div id="signal-feed" class="signal-feed">
             <div style="text-align:center; padding: 40px; color: var(--text-muted);">Connecting to blockchain via Convex...</div>
         </div>
@@ -579,6 +616,8 @@
         let client;
         let currentFilter = 'All';
         let signals = [];
+        let isPaused = false;
+        let latestData = [];
 
         const TRACKED_WALLETS = [
           { address: "0x83d55acdc72027ed339d267eebaf9a41e47490d5", vertical: "DeFi", label: "DeFi Whale #1", name: "vitalik.eth", persona: "DeFi Architect & OG" },
@@ -600,9 +639,15 @@
             client = new convex.ConvexClient(CONVEX_URL);
             
             client.onUpdate("signals:list", {}, (updatedSignals) => {
-                signals = updatedSignals;
-                renderSignals();
-                document.getElementById('signal-count').textContent = signals.length;
+                latestData = updatedSignals;
+                
+                if (!isPaused) {
+                    signals = updatedSignals;
+                    renderSignals();
+                    document.getElementById('signal-count').textContent = signals.length;
+                } else {
+                    updatePendingCount();
+                }
             }, (error) => {
                 console.error("Subscription failed:", error);
                 document.getElementById('signal-feed').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent-red);">Connection Error: ${error.message}</div>`;
@@ -612,6 +657,36 @@
         }
 
         window.addEventListener('load', init);
+
+        function pauseFeed() {
+            if (!isPaused) {
+                isPaused = true;
+                console.log("Feed paused for interaction.");
+            }
+        }
+
+        function resumeFeed() {
+            isPaused = false;
+            signals = latestData;
+            document.getElementById('pending-indicator').style.display = 'none';
+            renderSignals();
+            document.getElementById('signal-count').textContent = signals.length;
+        }
+
+        function updatePendingCount() {
+            const currentIds = new Set(signals.map(s => s._id));
+            const pending = latestData.filter(s => !currentIds.has(s._id));
+            
+            const indicator = document.getElementById('pending-indicator');
+            const countSpan = document.getElementById('pending-count');
+            
+            if (pending.length > 0) {
+                indicator.style.display = 'block';
+                countSpan.textContent = pending.length;
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
 
         function setFilter(filter) {
             currentFilter = filter;
@@ -664,7 +739,7 @@
                     const shareText = encodeURIComponent(`🚨 Whale Alert: ${s.fc_username ? '@'+s.fc_username : (s.display_name || s.wallet.slice(0, 8))} just interacted with a new protocol on Base: ${s.context.contract_protocol || s.target_contract.slice(0, 10)}! ${fire}\n\nVia Whale-In-The-Room (Powered by Allium & Convex)`);
 
                     return `
-                        <div class="signal-card">
+                        <div class="signal-card" onclick="pauseFeed()">
                             <div class="signal-icon-box">🆕</div>
                             <div class="signal-main">
                                 <div class="signal-title">
