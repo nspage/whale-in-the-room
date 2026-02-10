@@ -710,18 +710,19 @@
             const grid = document.getElementById('wallets-grid');
             if (cohort.length === 0) return;
 
-            // Show a preview of 8 wallets (4 AI, 4 DeFi)
-            const aiPreview = cohort.filter(w => w.vertical === 'AI').slice(0, 4);
-            const defiPreview = cohort.filter(w => w.vertical === 'DeFi').slice(0, 4);
-            const preview = [...aiPreview, ...defiPreview];
-
-            grid.innerHTML = preview.map(w => `
-                <div class="wallet-card ${w.vertical.toLowerCase()}">
-                    <div class="wallet-name">Rank #${w.rank} Whale</div>
-                    <div class="wallet-persona">${w.persona}</div>
+            // Sort by rank and show all 100 in a compact, scrollable grid
+            grid.style.display = 'flex';
+            grid.style.overflowX = 'auto';
+            grid.style.gap = '12px';
+            grid.style.paddingBottom = '12px';
+            
+            grid.innerHTML = cohort.sort((a,b) => a.rank - b.rank).map(w => `
+                <div class="wallet-card ${w.vertical.toLowerCase()}" style="min-width: 220px; flex-shrink: 0; padding: 12px;">
+                    <div class="wallet-name" style="font-size: 14px;">Rank #${w.rank} ${w.vertical}</div>
+                    <div class="wallet-persona" style="font-size: 11px; margin-bottom: 8px;">${w.persona}</div>
                     <div class="wallet-sub">
                         <a href="https://basescan.org/address/${w.address}" target="_blank" class="wallet-addr">${w.address.slice(0, 6)}...${w.address.slice(-4)}</a>
-                        <span class="tag ${w.vertical.toLowerCase()}">$${(w.volume_7d_usd / 1e6).toFixed(1)}M 7d</span>
+                        <span class="tag ${w.vertical.toLowerCase()}" style="font-size: 9px;">$${(w.volume_7d_usd / 1e6).toFixed(1)}M</span>
                     </div>
                 </div>
             `).join('');

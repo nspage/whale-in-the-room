@@ -36,28 +36,49 @@ export const addSignal = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    // Check for duplicate transaction_hash
-    const existing = await ctx.db
+    // 1. Skip if we've already processed this specific transaction
+    const existingTx = await ctx.db
       .query("signals")
       .withIndex("by_transaction_hash", (q) => q.eq("transaction_hash", args.transaction_hash))
       .first();
 
-    if (existing) {
-      // Note: We could update the record with social info if it was missing before,
-      // but per requirements we skip duplicate hashes.
-      return;
-    }
+    if (existingTx) return;
+
+    // 2. Signal A Logic: Is this a NEW contract for this wallet?
+    const seenBefore = await ctx.db
+      .query("signals")
+      .withIndex("by_wallet", (q) => q.eq("wallet", args.wallet))
+      .filter((q) => q.eq(q.field("target_contract"), args.target_contract))
+      .first();
+
+    // If we've seen this wallet hit this contract before, it's not a "New Contract" signal
+    if (seenBefore) return;
+
+    // 3. Enrichment: Calculate Common Neighbors (other whales who hit this)
+    const neighbors = await ctx.db
+      .query("signals")
+      .withIndex("by_target_contract", (q) => q.eq("target_contract", args.target_contract))
+      .collect();
+    
+    const uniqueWallets = new Set(neighbors.map(n => n.wallet));
+    uniqueWallets.delete(args.wallet);
+    args.common_neighbors = uniqueWallets.size;
+
+    // 4. Enrichment: Check if First Mover (first one in our cohort to hit it)
+    args.is_first_mover = neighbors.length === 0;
 
     await ctx.db.insert("signals", args);
 
-    // 1. Trigger Telegram Notification
-    await ctx.scheduler.runAfter(0, api.notifications.sendTelegramAlert, {
-      whaleName: args.context.wallet_label,
-      protocol: args.context.method_name || "Unknown Protocol",
-      dashboardUrl: "https://whale-in-the-room.pages.dev/", 
-    });
+    // 5. Trigger Telegram Notification (only for high-value ranks)
+    if (args.actionability_score >= 4) {
+        await ctx.scheduler.runAfter(0, api.notifications.sendTelegramAlert, {
+          whaleName: args.display_name || args.context.wallet_label,
+          protocol: args.context.method_name || "New Protocol",
+          dashboardUrl: "https://whale-in-the-room.pages.dev/", 
+        });
+    }
 
-    // 2. Trigger Audience Expansion (Lookalike SQL)
+    // 6. Trigger Audience Expansion (Lookalike SQL)
     await ctx.scheduler.runAfter(0, api.allium.findLookalikeAudience, {
       targetContract: args.target_contract,
     });

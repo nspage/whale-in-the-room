@@ -173,51 +173,70 @@ export const pollWhaleActivity = action({
       }
     } catch (e) { console.error("FC Batch Failed", e); }
 
-    // 3. Batch Polling for Transactions (100 wallets in ONE request)
+    // 3. Batch Polling for Transactions (Split into batches of 20 - Allium Limit)
     try {
-      const pollRes = await fetch("https://api.allium.so/api/v1/developer/wallet/transactions", {
-        method: "POST",
-        headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify(wallets.map(w => ({ chain: "base", address: w.address }))),
-      });
+      const batchSize = 20;
+      const batches = [];
+      for (let i = 0; i < wallets.length; i += batchSize) {
+        batches.push(wallets.slice(i, i + batchSize));
+      }
 
-      if (!pollRes.ok) return;
-      const { items: transactions } = await pollRes.json();
-      
-      const txByWallet = new Map();
-      (transactions || []).forEach((tx: any) => {
-          if (!txByWallet.has(tx.from_address.toLowerCase())) txByWallet.set(tx.from_address.toLowerCase(), []);
-          txByWallet.get(tx.from_address.toLowerCase()).push(tx);
-      });
+      for (const batch of batches) {
+        console.log(`Polling batch of ${batch.length} wallets...`);
+        const pollRes = await fetch("https://api.allium.so/api/v1/developer/wallet/transactions", {
+          method: "POST",
+          headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+          body: JSON.stringify(batch.map(w => ({ chain: "base", address: w.address }))),
+        });
 
-      for (const wallet of wallets) {
-        const walletTx = txByWallet.get(wallet.address.toLowerCase()) || [];
-        const fc_info = fcMap.get(wallet.address.toLowerCase()) || {};
-
-        for (const tx of walletTx) {
-          await ctx.runMutation(api.signals.addSignal, {
-            id: "convex-" + tx.hash.slice(0, 10),
-            type: "NEW_CONTRACT",
-            wallet: wallet.address,
-            vertical: wallet.vertical,
-            transaction_hash: tx.hash,
-            target_contract: tx.to_address || "0x0",
-            timestamp: tx.block_timestamp,
-            actionability_score: wallet.rank <= 10 ? 5 : 3,
-            is_first_mover: false,
-            vertical_tag: wallet.vertical,
-            common_neighbors: 0,
-            display_name: fc_info.display_name || null,
-            persona: wallet.persona || null,
-            fc_username: fc_info.username,
-            fc_display_name: fc_info.display_name,
-            fc_followers: fc_info.follower_count,
-            context: {
-              wallet_label: "Rank #" + wallet.rank + " " + wallet.vertical + " Whale",
-              method_name: tx.method_name,
-            },
-          });
+        if (!pollRes.ok) {
+          console.error(`Batch poll failed: ${await pollRes.text()}`);
+          continue;
         }
+
+        const data = await pollRes.json();
+        const transactions = data.items || [];
+        console.log(`Received ${transactions.length} transactions for batch.`);
+        
+        // Group transactions by wallet
+        const txByWallet = new Map();
+        transactions.forEach((tx: any) => {
+            const addr = tx.from_address.toLowerCase();
+            if (!txByWallet.has(addr)) txByWallet.set(addr, []);
+            txByWallet.get(addr).push(tx);
+        });
+
+        for (const wallet of batch) {
+          const walletTx = txByWallet.get(wallet.address.toLowerCase()) || [];
+          const fc_info = fcMap.get(wallet.address.toLowerCase()) || {};
+
+          for (const tx of walletTx) {
+            await ctx.runMutation(api.signals.addSignal, {
+              id: "convex-" + tx.hash.slice(0, 10),
+              type: "NEW_CONTRACT",
+              wallet: wallet.address,
+              vertical: wallet.vertical,
+              transaction_hash: tx.hash,
+              target_contract: tx.to_address || "0x0",
+              timestamp: tx.block_timestamp,
+              actionability_score: wallet.rank <= 10 ? 5 : 3,
+              is_first_mover: false,
+              vertical_tag: wallet.vertical,
+              common_neighbors: 0,
+              display_name: fc_info.display_name || null,
+              persona: wallet.persona || null,
+              fc_username: fc_info.username,
+              fc_display_name: fc_info.display_name,
+              fc_followers: fc_info.follower_count,
+              context: {
+                wallet_label: "Rank #" + wallet.rank + " " + wallet.vertical + " Whale",
+                method_name: tx.method_name,
+              },
+            });
+          }
+        }
+        // Small delay between batches to be safe
+        await new Promise(r => setTimeout(r, 1000));
       }
     } catch (e) { console.error("Poll Failed", e); }
   },
