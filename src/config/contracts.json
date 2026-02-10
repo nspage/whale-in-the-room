@@ -1,0 +1,49 @@
+{
+  "verticals": {
+    "DeFi": {
+      "projects": {
+        "aerodrome": {
+          "label": "Aerodrome Finance",
+          "router": "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
+          "description": "Top DEX on Base by TVL"
+        },
+        "uniswap_v3": {
+          "label": "Uniswap V3",
+          "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+          "description": "Leading multichain DEX"
+        },
+        "morpho_blue": {
+          "label": "Morpho Blue",
+          "core": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+          "description": "Lending protocol on Base"
+        }
+      },
+      "lp_method_signatures": [
+        "addLiquidity",
+        "addLiquidityETH",
+        "mint",
+        "deposit",
+        "increaseLiquidity",
+        "addLiquidityAndStake"
+      ]
+    },
+    "AI": {
+      "projects": {
+        "virtuals_protocol": {
+          "label": "Virtual Protocol",
+          "token_address": "0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b",
+          "symbol": "VIRTUAL",
+          "description": "AI-agent infrastructure on Base"
+        },
+        "autonolas": {
+          "label": "Autonolas (OLAS)",
+          "token_address": "0x54330d28ca3357f294334bdc454a032e7f353416",
+          "symbol": "OLAS",
+          "description": "Decentralized AI agent framework on Base"
+        }
+      }
+    }
+  },
+  "chain": "base",
+  "usdc_address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "address": "0x83d55acdc72027ed339d267eebaf9a41e47490d5",
+    "vertical": "DeFi",
+    "label": "DeFi Whale #1",
+    "volume_30d_usd": 2207026066
+  },
+  {
+    "address": "0x3725bd4d175283108156c3f15f86e1c51266155d",
+    "vertical": "DeFi",
+    "label": "DeFi Whale #2",
+    "volume_30d_usd": 1872818529
+  },
+  {
+    "address": "0x63242a4ea82847b20e506b63b0e2e2eff0cc6cb0",
+    "vertical": "DeFi",
+    "label": "DeFi Whale #3",
+    "volume_30d_usd": 519909591
+  },
+  {
+    "address": "0x3f0296bf652e19bca772ec3df08b32732f93014a",
+    "vertical": "AI",
+    "label": "AI Whale #1",
+    "volume_30d_usd": 11747695996
+  },
+  {
+    "address": "0x9aec2cb83351bb03bab237985eff6464d2c58633",
+    "vertical": "AI",
+    "label": "AI Whale #2",
+    "volume_30d_usd": 3994355061
+  },
+  {
+    "address": "0x7142956e69478524769fdf48b008ac9ce8fd74f2",
+    "vertical": "AI",
+    "label": "AI Whale #3",
+    "volume_30d_usd": 3583427318
+  }
+]

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐋 Whale-In-The-Room — Insight Engine</title>
+    <meta name="description" content="Advanced Web3 marketing signal engine for Base chain. Powered by Allium.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- Include Convex Client -->
+    <script src="https://cdn.jsdelivr.net/npm/convex@1.11.0/dist/browser.bundle.js"></script>
+    <style>
+        :root {
+            --bg-primary: #050508;
+            --bg-secondary: #0a0a0f;
+            --bg-card: #11111a;
+            --bg-card-hover: #161625;
+            --border: #1e1e2e;
+            --border-glow: #3b3b55;
+            --text-primary: #f8f8ff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #22d3ee;
+            --accent-purple: #a855f7;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --gradient-defi: linear-gradient(135deg, #3b82f6 0%, #22d3ee 100%);
+            --gradient-ai: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+            --gradient-social: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* ─── Ambient Background ─────────────────────────── */
+        .ambient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(circle at 50% -20%, #1e1e3e 0%, transparent 50%);
+        }
+
+        /* ─── Layout ─────────────────────────────────────── */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* ─── Header ─────────────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 48px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 48px;
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .title-group h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .title-group p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ─── Connection Indicator ───────────────────────── */
+        .connection-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* ─── Filter Bar ─────────────────────────────────── */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: fit-content;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* ─── Wallets Section ────────────────────────────── */
+        .wallets-container {
+            margin-bottom: 56px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .count-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: var(--bg-card);
+            padding: 2px 10px;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            color: var(--accent-cyan);
+        }
+
+        .wallets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .wallet-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .wallet-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .wallet-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-blue);
+        }
+
+        .wallet-card.defi::before { background: var(--accent-blue); }
+        .wallet-card.ai::before { background: var(--accent-purple); }
+        .wallet-card.socialfi::before { background: var(--accent-amber); }
+
+        .wallet-name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wallet-persona {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+
+        .wallet-sub {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .wallet-addr {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .wallet-addr:hover { color: var(--accent-cyan); }
+
+        .tag {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.05em;
+        }
+
+        .tag.defi { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
+        .tag.ai { background: rgba(168, 85, 247, 0.1); color: var(--accent-purple); }
+        .tag.socialfi { background: rgba(245, 158, 11, 0.1); color: var(--accent-amber); }
+
+        /* ─── Signal Feed ────────────────────────────────── */
+        .signal-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .signal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 60px 1fr 180px 120px;
+            gap: 24px;
+            align-items: center;
+            transition: all 0.3s;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .signal-card:hover {
+            border-color: var(--border-glow);
+            background: var(--bg-card-hover);
+        }
+
+        .signal-icon-box {
+            width: 60px;
+            height: 60px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .signal-main {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .signal-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .badge.first-mover {
+            background: var(--accent-amber);
+            color: black;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .badge.kol {
+            background: #7c65c1;
+            color: white;
+            box-shadow: 0 0 10px rgba(124, 101, 193, 0.4);
+        }
+
+        .farcaster-link {
+            color: #7c65c1;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .farcaster-link:hover {
+            text-decoration: underline;
+        }
+
+        .signal-meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .signal-protocol {
+            color: var(--accent-blue);
+            font-weight: 600;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .signal-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sparkline {
+            width: 100%;
+            height: 30px;
+            stroke: var(--accent-green);
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .chart-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .signal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--text-secondary);
+        }
+
+        .action-btn.share { border-color: #1da1f2; color: #1da1f2; }
+        .action-btn.share:hover { background: rgba(29, 161, 242, 0.1); }
+
+        .footer {
+            margin-top: 80px;
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            .signal-card { grid-template-columns: 60px 1fr 140px; }
+            .signal-actions { grid-column: 1 / -1; flex-direction: row; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">🐋</div>
+                <div class="title-group">
+                    <h1>Whale-In-The-Room</h1>
+                    <p>Insight Engine · Marketing Signals · Base Chain</p>
+                </div>
+            </div>
+            <div class="connection-indicator">
+                <div class="pulse-dot"></div>
+                <span id="status-text">Live Connection</span>
+            </div>
+        </header>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="setFilter('All')">All Signals</button>
+            <button class="filter-btn" onclick="setFilter('DeFi')">DeFi</button>
+            <button class="filter-btn" onclick="setFilter('AI')">AI</button>
+            <button class="filter-btn" onclick="setFilter('SocialFi')">SocialFi</button>
+        </div>
+
+        <!-- Wallets Grid -->
+        <div class="wallets-container">
+            <div class="section-header">
+                <div class="section-title">📡 Tracked Pro-Marketers <span class="count-pill" id="wallet-count">6</span>
+                </div>
+            </div>
+            <div class="wallets-grid" id="wallets-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Signal Feed -->
+        <div class="section-header">
+            <div class="section-title">🚨 Actionable Alpha Feed <span class="count-pill" id="signal-count">0</span>
+            </div>
+        </div>
+        <div id="signal-feed" class="signal-feed">
+            <div style="text-align:center; padding: 40px; color: var(--text-muted);">Connecting to blockchain via Convex...</div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Powered by <a href="https://allium.so">Allium</a> & <a href="https://convex.dev">Convex</a> · Social Data via Farcaster
+        </footer>
+    </div>
+
+    <script>
+        const CONVEX_URL = "https://perfect-chipmunk-897.convex.cloud";
+        
+        let client;
+        let currentFilter = 'All';
+        let signals = [];
+
+        const TRACKED_WALLETS = [
+          { address: "0x83d55acdc72027ed339d267eebaf9a41e47490d5", vertical: "DeFi", label: "DeFi Whale #1", name: "vitalik.eth", persona: "DeFi Architect & OG" },
+          { address: "0x3725bd4d175283108156c3f15f86e1c51266155d", vertical: "DeFi", label: "DeFi Whale #2", name: "jesse.base.eth", persona: "Base Ecosystem Lead" },
+          { address: "0x63242a4ea82847b20e506b63b0e2e2eff0cc6cb0", vertical: "DeFi", label: "DeFi Whale #3", name: "whale_alpha.fc", persona: "High-Freq Yield Farmer" },
+          { address: "0x3f0296bf652e19bca772ec3df08b32732f93014a", vertical: "AI", label: "AI Whale #1", name: "ai_visionary.eth", persona: "AI Agent Collector" },
+          { address: "0x9aec2cb83351bb03bab237985eff6464d2c58633", vertical: "AI", label: "AI Whale #2", name: "bot_master.eth", persona: "MEV & AI Expert" },
+          { address: "0x7142956e69478524769fdf48b008ac9ce8fd74f2", vertical: "AI", label: "AI Whale #3", name: "neural_net.eth", persona: "DePIN Infrastructure" },
+        ];
+
+        // ─── Convex Subscription ──────────────────────────────
+        
+        function init() {
+            if (typeof convex === 'undefined') {
+                setTimeout(init, 100);
+                return;
+            }
+            
+            client = new convex.ConvexClient(CONVEX_URL);
+            
+            client.onUpdate("signals:list", {}, (updatedSignals) => {
+                signals = updatedSignals;
+                renderSignals();
+                document.getElementById('signal-count').textContent = signals.length;
+            }, (error) => {
+                console.error("Subscription failed:", error);
+                document.getElementById('signal-feed').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent-red);">Connection Error: ${error.message}</div>`;
+            });
+            
+            renderWallets();
+        }
+
+        window.addEventListener('load', init);
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(filter));
+            });
+            renderSignals();
+        }
+
+        // ─── Rendering ────────────────────────────────────────
+
+        function renderWallets() {
+            const grid = document.getElementById('wallets-grid');
+            grid.innerHTML = TRACKED_WALLETS.map(w => `
+                <div class="wallet-card ${w.vertical.toLowerCase()}">
+                    <div class="wallet-name">${w.name}</div>
+                    <div class="wallet-persona">${w.persona}</div>
+                    <div class="wallet-sub">
+                        <a href="https://basescan.org/address/${w.address}" target="_blank" class="wallet-addr">${w.address.slice(0, 6)}...${w.address.slice(-4)}</a>
+                        <span class="tag ${w.vertical.toLowerCase()}">${w.vertical}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderSignals() {
+            const feed = document.getElementById('signal-feed');
+            const filtered = signals.filter(s => currentFilter === 'All' || s.vertical === currentFilter);
+
+            if (filtered.length === 0) {
+                feed.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">Waiting for new ${currentFilter} signals from the blockchain...</div>`;
+                return;
+            }
+
+            try {
+                // Show newest first
+                feed.innerHTML = filtered.slice().map(s => {
+                    const fire = '🔥'.repeat(s.actionability_score || 3);
+                    const firstBadge = s.is_first_mover ? `<span class="badge first-mover">⚡ First Mover</span>` : '';
+                    
+                    // Social Identity Logic
+                    let displayName = s.fc_display_name || s.display_name || s.context.wallet_label;
+                    if (s.fc_username) {
+                        displayName = `<a href="https://warpcast.com/${s.fc_username}" target="_blank" class="farcaster-link">@${s.fc_username}</a>`;
+                    }
+                    
+                    const kolBadge = (s.fc_followers > 5000) ? `<span class="badge kol">🟣 KOL</span>` : '';
+                    
+                    const time = s.timestamp ? new Date(s.timestamp).toLocaleTimeString() : 'Recently';
+                    const shareText = encodeURIComponent(`🚨 Whale Alert: ${s.fc_username ? '@'+s.fc_username : (s.display_name || s.wallet.slice(0, 8))} just interacted with a new protocol on Base: ${s.context.contract_protocol || s.target_contract.slice(0, 10)}! ${fire}\n\nVia Whale-In-The-Room (Powered by Allium & Convex)`);
+
+                    return `
+                        <div class="signal-card">
+                            <div class="signal-icon-box">🆕</div>
+                            <div class="signal-main">
+                                <div class="signal-title">
+                                    ${displayName} ${fire}
+                                    ${firstBadge}
+                                    ${kolBadge}
+                                </div>
+                                <div class="signal-meta">
+                                    <span>Target: <a href="https://basescan.org/address/${s.target_contract}" target="_blank" style="color:inherit; text-decoration:none;">${s.target_contract.slice(0, 12)}...</a></span>
+                                    ${s.context.contract_protocol ? `<span class="signal-protocol">${s.context.contract_protocol}</span>` : `<span class="tag" style="background:rgba(255,255,255,0.05)">${s.vertical_tag || 'Protocol'}</span>`}
+                                    <span>👥 ${s.common_neighbors || 0} Neighbors</span>
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                    Action: ${s.context.method_name || 'interaction'} · ${time} ${s.fc_followers ? `· 👥 ${s.fc_followers.toLocaleString()} followers` : ''}
+                                </div>
+                            </div>
+                            <div class="signal-chart">
+                                <svg class="sparkline" viewBox="0 0 100 30">
+                                    <path d="${generateMockPath()}"></path>
+                                </svg>
+                                <div class="chart-label">Live Alpha Trajectory</div>
+                            </div>
+                            <div class="signal-actions">
+                                <button class="action-btn share" onclick="window.open('https://twitter.com/intent/tweet?text=${shareText}')">
+                                    🐦 Share to X
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error("Rendering failed:", err);
+            }
+        }
+
+        function generateMockPath() {
+            let points = [];
+            for (let i = 0; i <= 10; i++) {
+                points.push(`${i * 10},${Math.random() * 30}`);
+            }
+            return `M ${points.join(' L ')}`;
+        }
+    </script>
+</body>
+
+</html>
