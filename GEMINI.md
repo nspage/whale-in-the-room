@@ -8,6 +8,7 @@ This project is a real-time Base chain alerting system that tracks Whale & KOL b
 - **Chain:** Base (Mainnet)
 - **Data Source:** [Allium API](https://allium.so) (Explorer SQL, Wallet, Price APIs).
 - **Core Signal:** **Signal A (New Contract Interaction)** — Fired when a tracked whale interacts with a smart contract for the first time.
+- **Social Identity:** Dynamic lookup of Farcaster profiles (username, followers) via Allium SQL.
 
 ## Tech Stack
 
@@ -52,6 +53,7 @@ This project is a real-time Base chain alerting system that tracks Whale & KOL b
 ## Development Conventions
 
 - **Convex First:** New signals and data features should be implemented as Convex functions.
-- **Environment Variables:** `ALLIUM_API_KEY` must be set in the Convex dashboard.
+- **Environment Variables:** `ALLIUM_API_KEY` and `ALLIUM_QUERY_ID` must be set in the Convex dashboard.
+- **Social Identity:** Signals are enriched with Farcaster data (`fc_username`, `fc_followers`) using Allium's `farcaster_profiles` table.
 - **Real-time UI:** Use `ConvexClient` in the frontend for live data subscriptions.
 - **Duplicate Prevention:** Always check `transaction_hash` before inserting signals in `addSignal`.

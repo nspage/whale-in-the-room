@@ -136,7 +136,9 @@ Each detected signal is enriched with:
 | `is_first_mover` | `true` if this wallet is the *first* tracked whale to hit this contract | Global `seenContracts` set |
 | `vertical_tag` | Inferred vertical (DeFi/AI/SocialFi) from protocol identification | `contracts.json` lookup |
 | `common_neighbors` | Count of other tracked whales who also interacted with this contract | Cross-wallet set intersection |
-| `display_name` | Simulated ENS/Farcaster identity (e.g. `vitalik.eth`) | Hardcoded social map |
+| `fc_username` | Farcaster handle (e.g. `@vitalik`) | Allium SQL lookup (farcaster_profiles) |
+| `fc_followers` | Farcaster follower count | Allium SQL lookup (farcaster_profiles) |
+| `kol_badge` | 🟣 KOL badge for power users (>5,000 followers) | Computed from `fc_followers` |
 | `persona` | Whale archetype label (e.g. "High-Freq Yield Farmer") | Hardcoded social map |
 | `contract_protocol` | Named protocol if contract is known (e.g. "Aerodrome Finance") | `contracts.json` |
 | `method_name` | Solidity method called (e.g. `addLiquidity`) | Transaction data |
@@ -351,7 +353,7 @@ The dashboard is being evolved from a monitoring tool into an **Insight Engine**
 
 | Feature | Priority | Description |
 |---------|----------|-------------|
-| **Real ENS/Farcaster Resolution** | High | Replace simulated social map with live lookups |
+| **Farcaster Resolution** | Done ✅ | Dynamic social identity lookup via Allium SQL |
 | **SocialFi Wallet Seeding** | High | Run the SocialFi SQL query and add wallets to tracking |
 | **Persistent Storage** | Done ✅ | Migrated from JSON to Convex Database |
 | **Gaming Vertical** | Medium | Add Gaming whale identification (NFT transfers, game txns) |

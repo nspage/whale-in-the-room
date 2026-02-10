@@ -123,3 +123,93 @@ export const pollWhaleActivity = action({
     }
   },
 });
+
+export const findLookalikeAudience = action({
+  args: {
+    targetContract: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.ALLIUM_API_KEY;
+    const queryId = process.env.ALLIUM_QUERY_ID;
+    if (!apiKey || !queryId) {
+      throw new Error("ALLIUM_API_KEY or ALLIUM_QUERY_ID environment variable is not set");
+    }
+
+    const sql = `
+      WITH contract_interactors AS (
+          SELECT DISTINCT from_address as wallet_address
+          FROM base.raw.transactions
+          WHERE LOWER(to_address) = LOWER('${args.targetContract}')
+            AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '7 DAY'
+      ),
+      wallet_volume AS (
+          SELECT 
+              from_address as wallet_address,
+              SUM(usd_amount) as total_volume_usd
+          FROM base.assets.erc20_token_transfers
+          WHERE block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '30 DAY'
+          GROUP BY from_address
+      )
+      SELECT 
+          ci.wallet_address,
+          wv.total_volume_usd
+      FROM contract_interactors ci
+      JOIN wallet_volume wv ON ci.wallet_address = wv.wallet_address
+      WHERE wv.total_volume_usd > 10000
+      ORDER BY wv.total_volume_usd DESC
+      LIMIT 50
+    `;
+
+    console.log(`Finding lookalike audience for contract: ${args.targetContract}`);
+
+    const runResponse = await fetch(`https://api.allium.so/api/v1/explorer/queries/${queryId}/run-async`, {
+      method: "POST",
+      headers: {
+        "X-API-KEY": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ parameters: { sql_query: sql } }),
+    });
+
+    if (!runResponse.ok) {
+      throw new Error(`Failed to start Allium query: ${await runResponse.text()}`);
+    }
+
+    const { run_id: runId } = await runResponse.json();
+
+    // Poll for results
+    let results = [];
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const statusRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/status`, {
+        headers: { "X-API-KEY": apiKey },
+      });
+      const status = (await statusRes.text()).replace(/"/g, "");
+
+      if (status === "success") {
+        const resultRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/results?f=json`, {
+          headers: { "X-API-KEY": apiKey },
+        });
+        const resultData = await resultRes.json();
+        results = resultData.data || [];
+        break;
+      }
+      if (status === "failed") {
+        throw new Error("Allium query failed");
+      }
+    }
+
+    if (results.length > 0) {
+      await ctx.runMutation(api.signals.saveTargetAudience, {
+        target_contract: args.targetContract,
+        wallets: results.map((r: any) => ({
+          wallet_address: r.wallet_address,
+          total_volume_usd: Number(r.total_volume_usd),
+        })),
+      });
+      console.log(`Saved ${results.length} lookalike wallets for ${args.targetContract}`);
+    }
+
+    return results;
+  },
+});

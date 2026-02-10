@@ -32,4 +32,11 @@ export default defineSchema({
     .index("by_vertical", ["vertical"])
     .index("by_timestamp", ["timestamp"])
     .index("by_transaction_hash", ["transaction_hash"]),
+
+  target_audiences: defineTable({
+    target_contract: v.string(),
+    wallet_address: v.string(),
+    total_volume_usd: v.number(),
+    timestamp: v.string(),
+  }).index("by_target_contract", ["target_contract"]),
 });

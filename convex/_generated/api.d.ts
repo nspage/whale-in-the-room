@@ -10,6 +10,7 @@
 
 import type * as allium from "../allium.js";
 import type * as crons from "../crons.js";
+import type * as notifications from "../notifications.js";
 import type * as signals from "../signals.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   allium: typeof allium;
   crons: typeof crons;
+  notifications: typeof notifications;
   signals: typeof signals;
 }>;
 

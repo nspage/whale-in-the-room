@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 export const list = query({
   args: {},
@@ -48,5 +49,60 @@ export const addSignal = mutation({
     }
 
     await ctx.db.insert("signals", args);
+
+    // 1. Trigger Telegram Notification
+    await ctx.scheduler.runAfter(0, api.notifications.sendTelegramAlert, {
+      whaleName: args.context.wallet_label,
+      protocol: args.context.method_name || "Unknown Protocol",
+      dashboardUrl: "https://whale-in-the-room.pages.dev/", 
+    });
+
+    // 2. Trigger Audience Expansion (Lookalike SQL)
+    await ctx.scheduler.runAfter(0, api.allium.findLookalikeAudience, {
+      targetContract: args.target_contract,
+    });
+  },
+});
+
+export const saveTargetAudience = mutation({
+  args: {
+    target_contract: v.string(),
+    wallets: v.array(
+      v.object({
+        wallet_address: v.string(),
+        total_volume_usd: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const timestamp = new Date().toISOString();
+    for (const wallet of args.wallets) {
+      // Avoid duplicates for the same contract
+      const existing = await ctx.db
+        .query("target_audiences")
+        .withIndex("by_target_contract", (q) => q.eq("target_contract", args.target_contract))
+        .filter((q) => q.eq(q.field("wallet_address"), wallet.wallet_address))
+        .first();
+
+      if (!existing) {
+        await ctx.db.insert("target_audiences", {
+          target_contract: args.target_contract,
+          wallet_address: wallet.wallet_address,
+          total_volume_usd: wallet.total_volume_usd,
+          timestamp,
+        });
+      }
+    }
+  },
+});
+
+export const listTargetAudience = query({
+  args: { target_contract: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("target_audiences")
+      .withIndex("by_target_contract", (q) => q.eq("target_contract", args.target_contract))
+      .order("desc")
+      .take(50);
   },
 });
