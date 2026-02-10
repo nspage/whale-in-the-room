@@ -39,4 +39,15 @@ export default defineSchema({
     total_volume_usd: v.number(),
     timestamp: v.string(),
   }).index("by_target_contract", ["target_contract"]),
+
+  cohorts: defineTable({
+    address: v.string(),
+    vertical: v.union(v.literal("DeFi"), v.literal("AI")),
+    rank: v.number(),
+    volume_7d_usd: v.number(),
+    discovery_timestamp: v.string(),
+    name: v.optional(v.string()),
+    persona: v.optional(v.string()),
+  }).index("by_address", ["address"])
+    .index("by_vertical", ["vertical"]),
 });

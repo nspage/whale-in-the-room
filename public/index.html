@@ -581,11 +581,12 @@
         <!-- Wallets Grid -->
         <div class="wallets-container">
             <div class="section-header">
-                <div class="section-title">📡 Tracked Pro-Marketers <span class="count-pill" id="wallet-count">6</span>
+                <div class="section-title">📍 Active Discovery Cohort: Feb 2026 <span class="count-pill" id="wallet-count">100</span>
+                    <i style="font-weight: 400; font-size: 13px; color: var(--text-muted); margin-left: 12px; font-style: italic;">Top 100 Power-Users (AI & DeFi) discovered via Allium SQL</i>
                 </div>
             </div>
             <div class="wallets-grid" id="wallets-grid">
-                <!-- Populated by JS -->
+                <div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">Loading dynamic cohort from Convex...</div>
             </div>
         </div>
 
@@ -604,6 +605,18 @@
             <div style="text-align:center; padding: 40px; color: var(--text-muted);">Connecting to blockchain via Convex...</div>
         </div>
 
+        <!-- Future Enhancements Teaser -->
+        <div style="margin-top: 60px; padding: 32px; background: rgba(59, 130, 246, 0.05); border: 1px dashed var(--border); border-radius: 24px; text-align: center;">
+            <div style="font-size: 14px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
+                🚀 Coming Soon: The Discovery Loop
+            </div>
+            <h3 style="font-size: 20px; margin-bottom: 12px;">Automated Lookalike Expansion</h3>
+            <p style="max-width: 600px; margin: 0 auto; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                Soon, every time a Rank #1-10 whale interacts with a new contract, the engine will automatically run a 
+                <b>Lookalike SQL Job</b> to find 50 similar high-net-worth wallets and add them to your temporary monitoring pool.
+            </p>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             Powered by <a href="https://allium.so">Allium</a> & <a href="https://convex.dev">Convex</a> · Social Data via Farcaster
@@ -618,15 +631,7 @@
         let signals = [];
         let isPaused = false;
         let latestData = [];
-
-        const TRACKED_WALLETS = [
-          { address: "0x83d55acdc72027ed339d267eebaf9a41e47490d5", vertical: "DeFi", label: "DeFi Whale #1", name: "vitalik.eth", persona: "DeFi Architect & OG" },
-          { address: "0x3725bd4d175283108156c3f15f86e1c51266155d", vertical: "DeFi", label: "DeFi Whale #2", name: "jesse.base.eth", persona: "Base Ecosystem Lead" },
-          { address: "0x63242a4ea82847b20e506b63b0e2e2eff0cc6cb0", vertical: "DeFi", label: "DeFi Whale #3", name: "whale_alpha.fc", persona: "High-Freq Yield Farmer" },
-          { address: "0x3f0296bf652e19bca772ec3df08b32732f93014a", vertical: "AI", label: "AI Whale #1", name: "ai_visionary.eth", persona: "AI Agent Collector" },
-          { address: "0x9aec2cb83351bb03bab237985eff6464d2c58633", vertical: "AI", label: "AI Whale #2", name: "bot_master.eth", persona: "MEV & AI Integration Expert" },
-          { address: "0x7142956e69478524769fdf48b008ac9ce8fd74f2", vertical: "AI", label: "AI Whale #3", name: "neural_net.eth", persona: "DePIN & AI Infrastructure" },
-        ];
+        let cohort = [];
 
         // ─── Convex Subscription ──────────────────────────────
         
@@ -650,10 +655,14 @@
                 }
             }, (error) => {
                 console.error("Subscription failed:", error);
-                document.getElementById('signal-feed').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent-red);">Connection Error: ${error.message}</div>`;
             });
-            
-            renderWallets();
+
+            // Fetch dynamic cohort
+            client.query("allium:getCohort").then(data => {
+                cohort = data;
+                renderWallets();
+                document.getElementById('wallet-count').textContent = cohort.length;
+            });
         }
 
         window.addEventListener('load', init);
@@ -661,7 +670,6 @@
         function pauseFeed() {
             if (!isPaused) {
                 isPaused = true;
-                console.log("Feed paused for interaction.");
             }
         }
 
@@ -700,13 +708,20 @@
 
         function renderWallets() {
             const grid = document.getElementById('wallets-grid');
-            grid.innerHTML = TRACKED_WALLETS.map(w => `
+            if (cohort.length === 0) return;
+
+            // Show a preview of 8 wallets (4 AI, 4 DeFi)
+            const aiPreview = cohort.filter(w => w.vertical === 'AI').slice(0, 4);
+            const defiPreview = cohort.filter(w => w.vertical === 'DeFi').slice(0, 4);
+            const preview = [...aiPreview, ...defiPreview];
+
+            grid.innerHTML = preview.map(w => `
                 <div class="wallet-card ${w.vertical.toLowerCase()}">
-                    <div class="wallet-name">${w.name}</div>
+                    <div class="wallet-name">Rank #${w.rank} Whale</div>
                     <div class="wallet-persona">${w.persona}</div>
                     <div class="wallet-sub">
                         <a href="https://basescan.org/address/${w.address}" target="_blank" class="wallet-addr">${w.address.slice(0, 6)}...${w.address.slice(-4)}</a>
-                        <span class="tag ${w.vertical.toLowerCase()}">${w.vertical}</span>
+                        <span class="tag ${w.vertical.toLowerCase()}">$${(w.volume_7d_usd / 1e6).toFixed(1)}M 7d</span>
                     </div>
                 </div>
             `).join('');
@@ -744,11 +759,12 @@
                             <div class="signal-main">
                                 <div class="signal-title">
                                     ${displayName} ${fire}
+                                    <span class="badge ${s.vertical.toLowerCase()}">${s.context.wallet_label}</span>
                                     ${firstBadge}
                                     ${kolBadge}
                                 </div>
                                 <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; font-style: italic;">
-                                    ${s.persona || 'Active Whale'}
+                                    ${s.persona || 'Active Power-User'}
                                 </div>
                                 <div class="signal-meta">
                                     <span>Target: <a href="https://basescan.org/address/${s.target_contract}" target="_blank" style="color:inherit; text-decoration:none;">${s.target_contract.slice(0, 12)}...</a></span>
