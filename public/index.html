@@ -13,842 +13,1013 @@
     <!-- Include Convex Client -->
     <script src="https://cdn.jsdelivr.net/npm/convex@1.11.0/dist/browser.bundle.js"></script>
     <style>
-        :root {
-            --bg-primary: #050508;
-            --bg-secondary: #0a0a0f;
-            --bg-card: #11111a;
-            --bg-card-hover: #161625;
-            --border: #1e1e2e;
-            --border-glow: #3b3b55;
-            --text-primary: #f8f8ff;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --accent-blue: #3b82f6;
-            --accent-cyan: #22d3ee;
-            --accent-purple: #a855f7;
-            --accent-green: #10b981;
-            --accent-amber: #f59e0b;
-            --accent-red: #ef4444;
-            --gradient-defi: linear-gradient(135deg, #3b82f6 0%, #22d3ee 100%);
-            --gradient-ai: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
-            --gradient-social: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
-            --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-            line-height: 1.5;
-        }
-
-        /* ─── Ambient Background ─────────────────────────── */
-        .ambient {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 0;
-            background: radial-gradient(circle at 50% -20%, #1e1e3e 0%, transparent 50%);
-        }
-
-        /* ─── Layout ─────────────────────────────────────── */
-        .container {
-            position: relative;
-            z-index: 1;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 24px;
-        }
-
-        /* ─── Header ─────────────────────────────────────── */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 48px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .logo {
-            font-size: 48px;
-            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4));
-            animation: float 4s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-        }
-
-        .title-group h1 {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .title-group p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        /* ─── Connection Indicator ───────────────────────── */
-        .connection-indicator {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            background: var(--bg-card);
-            padding: 8px 16px;
-            border-radius: 100px;
-            border: 1px solid var(--border);
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        /* ─── Filter Bar ─────────────────────────────────── */
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 32px;
-            padding: 6px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            width: fit-content;
-        }
-
-        .filter-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .filter-btn:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .filter-btn.active {
-            background: var(--accent-blue);
-            color: white;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        /* ─── Wallets Section ────────────────────────────── */
-        .wallets-container {
-            margin-bottom: 56px;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .count-pill {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            background: var(--bg-card);
-            padding: 2px 10px;
-            border-radius: 100px;
-            border: 1px solid var(--border);
-            color: var(--accent-cyan);
-        }
-
-        .wallets-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 16px;
-        }
-
-        .wallet-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .wallet-card:hover {
-            border-color: var(--accent-blue);
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-glow);
-        }
-
-        .wallet-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--accent-blue);
-        }
-
-        .wallet-card.defi::before { background: var(--accent-blue); }
-        .wallet-card.ai::before { background: var(--accent-purple); }
-        .wallet-card.socialfi::before { background: var(--accent-amber); }
-
-        .wallet-name {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .wallet-persona {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            font-style: italic;
-        }
-
-        .wallet-sub {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .wallet-addr {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--text-muted);
-            text-decoration: none;
-        }
-
-        .wallet-addr:hover { color: var(--accent-cyan); }
-
-        .tag {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: 4px;
-            letter-spacing: 0.05em;
-        }
-
-        .tag.defi { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
-        .tag.ai { background: rgba(168, 85, 247, 0.1); color: var(--accent-purple); }
-        .tag.socialfi { background: rgba(245, 158, 11, 0.1); color: var(--accent-amber); }
-
-        /* ─── Signal Feed ────────────────────────────────── */
-        .signal-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .signal-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 24px;
-            display: grid;
-            grid-template-columns: 60px 1fr 180px 120px;
-            gap: 24px;
-            align-items: center;
-            transition: all 0.3s;
-            animation: slideUp 0.4s ease-out;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .signal-card:hover {
-            border-color: var(--border-glow);
-            background: var(--bg-card-hover);
-        }
-
-        .signal-icon-box {
-            width: 60px;
-            height: 60px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-        }
-
-        .signal-main {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .signal-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 17px;
-            font-weight: 700;
-        }
-
-        .badge {
-            font-size: 10px;
-            font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 6px;
-            text-transform: uppercase;
-        }
-
-        .badge.first-mover {
-            background: var(--accent-amber);
-            color: black;
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
-        }
-
-        .badge.kol {
-            background: #7c65c1;
-            color: white;
-            box-shadow: 0 0 10px rgba(124, 101, 193, 0.4);
-        }
-
-        .farcaster-link {
-            color: #7c65c1;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .farcaster-link:hover {
-            text-decoration: underline;
-        }
-
-        .signal-meta {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .signal-protocol {
-            color: var(--accent-blue);
-            font-weight: 600;
-            background: rgba(59, 130, 246, 0.1);
-            padding: 2px 8px;
-            border-radius: 6px;
-        }
-
-        .signal-chart {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .sparkline {
-            width: 100%;
-            height: 30px;
-            stroke: var(--accent-green);
-            stroke-width: 2;
-            fill: none;
-            stroke-linecap: round;
-        }
-
-        .chart-label {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        .signal-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .audience-section {
-            grid-column: 1 / -1;
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border);
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .audience-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
-        }
-
-        .audience-item {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .audience-wallet {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            color: var(--accent-cyan);
-        }
-
-        .audience-vol {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        .telegram-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(0, 136, 204, 0.1);
-            color: #0088cc;
-            padding: 4px 10px;
-            border-radius: 100px;
-            font-size: 11px;
-            font-weight: 700;
-            border: 1px solid rgba(0, 136, 204, 0.2);
-        }
-
-        .action-btn {
-            width: 100%;
-            padding: 8px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text-primary);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--text-secondary);
-        }
-
-        .action-btn.share { border-color: #1da1f2; color: #1da1f2; }
-        .action-btn.share:hover { background: rgba(29, 161, 242, 0.1); }
-
-        /* ─── Pending Activity Indicator ─────────────────── */
-        .pending-indicator {
-            display: none;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid var(--accent-blue);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 24px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 700;
-            color: var(--accent-cyan);
-            animation: glow-pulse 2s infinite;
-            transition: all 0.2s;
-            position: sticky;
-            top: 20px;
-            z-index: 10;
-            backdrop-filter: blur(8px);
-        }
-
-        .pending-indicator:hover {
-            background: rgba(59, 130, 246, 0.2);
-            transform: scale(1.01);
-        }
-
-        @keyframes glow-pulse {
-            0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
-            50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); border-color: var(--accent-blue); }
-            100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
-        }
-
-        .footer {
-            margin-top: 80px;
-            padding: 40px 0;
-            text-align: center;
-            border-top: 1px solid var(--border);
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .footer a {
-            color: var(--accent-blue);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        @media (max-width: 1024px) {
-            .signal-card { grid-template-columns: 60px 1fr 140px; }
-            .signal-actions { grid-column: 1 / -1; flex-direction: row; }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="ambient"></div>
-
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <div class="logo">🐋</div>
-                <div class="title-group">
-                    <h1>Whale-In-The-Room</h1>
-                    <p>Insight Engine · Marketing Signals · Base Chain</p>
-                </div>
-            </div>
-            <div class="connection-indicator">
-                <div class="pulse-dot"></div>
-                <span id="status-text">Live Connection</span>
-            </div>
-        </header>
-
-        <!-- Filter Bar -->
-        <div class="filter-bar">
-            <button class="filter-btn active" onclick="setFilter('All')">All Signals</button>
-            <button class="filter-btn" onclick="setFilter('DeFi')">DeFi</button>
-            <button class="filter-btn" onclick="setFilter('AI')">AI</button>
-            <button class="filter-btn" onclick="setFilter('SocialFi')">SocialFi</button>
-        </div>
-
-        <!-- Wallets Grid -->
-        <div class="wallets-container">
-            <div class="section-header">
-                <div class="section-title">📍 Active Discovery Cohort: Feb 2026 <span class="count-pill" id="wallet-count">100</span>
-                    <i style="font-weight: 400; font-size: 13px; color: var(--text-muted); margin-left: 12px; font-style: italic;">Top 100 Power-Users (AI & DeFi) discovered via Allium SQL</i>
-                </div>
-            </div>
-            <div class="wallets-grid" id="wallets-grid">
-                <div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">Loading dynamic cohort from Convex...</div>
-            </div>
-        </div>
-
-        <!-- Signal Feed -->
-        <div class="section-header">
-            <div class="section-title">🚨 Actionable Alpha Feed <span class="count-pill" id="signal-count">0</span>
-                <i style="font-weight: 400; font-size: 13px; color: var(--text-muted); margin-left: 12px; font-style: italic;">Interacting with cards will pause feed</i>
-            </div>
-        </div>
-        
-        <div id="pending-indicator" class="pending-indicator" onclick="resumeFeed()">
-            ⚡ <span id="pending-count">0</span> new signals incoming. Click to resume live updates.
-        </div>
-
-        <div id="signal-feed" class="signal-feed">
-            <div style="text-align:center; padding: 40px; color: var(--text-muted);">Connecting to blockchain via Convex...</div>
-        </div>
-
-        <!-- Future Enhancements Teaser -->
-        <div style="margin-top: 60px; padding: 32px; background: rgba(59, 130, 246, 0.05); border: 1px dashed var(--border); border-radius: 24px; text-align: center;">
-            <div style="font-size: 14px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
-                🚀 Coming Soon: The Discovery Loop
-            </div>
-            <h3 style="font-size: 20px; margin-bottom: 12px;">Automated Lookalike Expansion</h3>
-            <p style="max-width: 600px; margin: 0 auto; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-                Soon, every time a Rank #1-10 whale interacts with a new contract, the engine will automatically run a 
-                <b>Lookalike SQL Job</b> to find 50 similar high-net-worth wallets and add them to your temporary monitoring pool.
-            </p>
-        </div>
-
-        <!-- Footer -->
-        <footer class="footer">
-            Powered by <a href="https://allium.so">Allium</a> & <a href="https://convex.dev">Convex</a> · Social Data via Farcaster
-        </footer>
-    </div>
-
-    <script>
-        const CONVEX_URL = "https://content-herring-575.convex.cloud";
-        
-        let client;
-        let currentFilter = 'All';
-        let signals = [];
-        let isPaused = false;
-        let latestData = [];
-        let cohort = [];
-
-        // ─── Convex Subscription ──────────────────────────────
-        
-        function init() {
-            if (typeof convex === 'undefined') {
-                setTimeout(init, 100);
-                return;
-            }
-            
-            client = new convex.ConvexClient(CONVEX_URL);
-            
-            client.onUpdate("signals:list", {}, (updatedSignals) => {
-                latestData = updatedSignals;
-                
-                if (!isPaused) {
-                    signals = updatedSignals;
-                    renderSignals();
-                    document.getElementById('signal-count').textContent = signals.length;
-                } else {
-                    updatePendingCount();
+                :root {
+                    --bg-primary: #050508;
+                    --bg-secondary: #0a0a0f;
+                    --bg-card: #11111a;
+                    --bg-card-hover: #161625;
+                    --border: #1e1e2e;
+                    --border-glow: #3b3b55;
+                    --text-primary: #f8f8ff;
+                    --text-secondary: #94a3b8;
+                    --text-muted: #64748b;
+                    --accent-blue: #3b82f6;
+                    --accent-cyan: #22d3ee;
+                    --accent-purple: #a855f7;
+                    --accent-green: #10b981;
+                    --accent-amber: #f59e0b;
+                    --accent-red: #ef4444;
+                    --gradient-defi: linear-gradient(135deg, #3b82f6 0%, #22d3ee 100%);
+                    --gradient-ai: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+                    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.1);
                 }
-            }, (error) => {
-                console.error("Subscription failed:", error);
-            });
-
-            // Fetch dynamic cohort
-            client.query("allium:getCohort").then(data => {
-                cohort = data;
-                renderWallets();
-                document.getElementById('wallet-count').textContent = cohort.length;
-            });
-        }
-
-        window.addEventListener('load', init);
-
-        function pauseFeed() {
-            if (!isPaused) {
-                isPaused = true;
-            }
-        }
-
-        function resumeFeed() {
-            isPaused = false;
-            signals = latestData;
-            document.getElementById('pending-indicator').style.display = 'none';
-            renderSignals();
-            document.getElementById('signal-count').textContent = signals.length;
-        }
-
-        function updatePendingCount() {
-            const currentIds = new Set(signals.map(s => s._id));
-            const pending = latestData.filter(s => !currentIds.has(s._id));
-            
-            const indicator = document.getElementById('pending-indicator');
-            const countSpan = document.getElementById('pending-count');
-            
-            if (pending.length > 0) {
-                indicator.style.display = 'block';
-                countSpan.textContent = pending.length;
-            } else {
-                indicator.style.display = 'none';
-            }
-        }
-
-        function setFilter(filter) {
-            currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.includes(filter));
-            });
-            renderSignals();
-        }
-
-        // ─── Rendering ────────────────────────────────────────
-
-        function renderWallets() {
-            const grid = document.getElementById('wallets-grid');
-            if (cohort.length === 0) return;
-
-            // Sort by rank and show all 100 in a compact, scrollable grid
-            grid.style.display = 'flex';
-            grid.style.overflowX = 'auto';
-            grid.style.gap = '12px';
-            grid.style.paddingBottom = '12px';
-            
-            grid.innerHTML = cohort.sort((a,b) => a.rank - b.rank).map(w => `
-                <div class="wallet-card ${w.vertical.toLowerCase()}" style="min-width: 220px; flex-shrink: 0; padding: 12px;">
-                    <div class="wallet-name" style="font-size: 14px;">Rank #${w.rank} ${w.vertical}</div>
-                    <div class="wallet-persona" style="font-size: 11px; margin-bottom: 8px;">${w.persona}</div>
-                    <div class="wallet-sub">
-                        <a href="https://basescan.org/address/${w.address}" target="_blank" class="wallet-addr">${w.address.slice(0, 6)}...${w.address.slice(-4)}</a>
-                        <span class="tag ${w.vertical.toLowerCase()}" style="font-size: 9px;">$${(w.volume_7d_usd / 1e6).toFixed(1)}M</span>
+        
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+        
+                body {
+                    font-family: 'Outfit', sans-serif;
+                    background: var(--bg-primary);
+                    color: var(--text-primary);
+                    min-height: 100vh;
+                    overflow-x: hidden;
+                    line-height: 1.5;
+                }
+        
+                /* ─── Explainer Overlay ─────────────────────────── */
+                .explainer-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.85);
+                    backdrop-filter: blur(12px);
+                    z-index: 2000;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 24px;
+                    animation: fadeIn 0.3s ease;
+                }
+        
+                .explainer-content {
+                    background: var(--bg-card);
+                    border: 1px solid var(--border-glow);
+                    border-radius: 24px;
+                    max-width: 800px;
+                    width: 100%;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    padding: 40px;
+                    position: relative;
+                    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+                }
+        
+                .close-explainer {
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid var(--border);
+                    color: var(--text-primary);
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    font-size: 18px;
+                    transition: all 0.2s;
+                }
+        
+                .close-explainer:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    transform: rotate(90deg);
+                }
+        
+                .explainer-title {
+                    font-size: 28px;
+                    font-weight: 800;
+                    margin-bottom: 24px;
+                    background: var(--gradient-defi);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+        
+                .explainer-section {
+                    margin-bottom: 32px;
+                }
+        
+                .explainer-section h3 {
+                    font-size: 18px;
+                    margin-bottom: 12px;
+                    color: var(--accent-cyan);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+        
+                .explainer-section p {
+                    color: var(--text-secondary);
+                    font-size: 15px;
+                    line-height: 1.6;
+                }
+        
+                .help-icon {
+                    cursor: pointer;
+                    width: 36px;
+                    height: 36px;
+                    background: var(--bg-card);
+                    border: 1px solid var(--border);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    color: var(--text-secondary);
+                    transition: all 0.2s;
+                }
+        
+                .help-icon:hover {
+                    color: var(--text-primary);
+                    border-color: var(--accent-blue);
+                    transform: scale(1.1);
+                    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+                }
+        
+                /* ─── Ambient Background ─────────────────────────── */
+                .ambient {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    pointer-events: none;
+                    z-index: 0;
+                    background: radial-gradient(circle at 50% -20%, #1e1e3e 0%, transparent 50%);
+                }
+        
+                /* ─── Layout ─────────────────────────────────────── */
+                .container {
+                    position: relative;
+                    z-index: 1;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 40px 24px;
+                }
+        
+                /* ─── Header ─────────────────────────────────────── */
+                .header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 48px;
+                    padding-bottom: 24px;
+                    border-bottom: 1px solid var(--border);
+                }
+        
+                .header-left {
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                }
+        
+                .logo {
+                    font-size: 48px;
+                    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4));
+                    animation: float 4s ease-in-out infinite;
+                }
+        
+                @keyframes float {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-8px); }
+                }
+        
+                .title-group h1 {
+                    font-size: 28px;
+                    font-weight: 800;
+                    letter-spacing: -0.03em;
+                    background: linear-gradient(to right, #fff, #94a3b8);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+        
+                .title-group p {
+                    font-size: 14px;
+                    color: var(--text-secondary);
+                    font-weight: 500;
+                }
+        
+                .header-right {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                }
+        
+                /* ─── Connection Indicator ───────────────────────── */
+                .connection-indicator {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 13px;
+                    color: var(--text-secondary);
+                    background: var(--bg-card);
+                    padding: 8px 16px;
+                    border-radius: 100px;
+                    border: 1px solid var(--border);
+                }
+        
+                .pulse-dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #10b981;
+                    box-shadow: 0 0 10px #10b981;
+                    animation: pulse 2s infinite;
+                }
+        
+                @keyframes pulse {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                }
+        
+                /* ─── Filter Bar ─────────────────────────────────── */
+                .filter-bar {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 32px;
+                    padding: 6px;
+                    background: var(--bg-card);
+                    border: 1px solid var(--border);
+                    border-radius: 12px;
+                    width: fit-content;
+                }
+        
+                .filter-btn {
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    border: none;
+                    background: transparent;
+                    color: var(--text-secondary);
+                    font-weight: 600;
+                    font-size: 14px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+        
+                .filter-btn:hover {
+                    color: var(--text-primary);
+                    background: rgba(255, 255, 255, 0.05);
+                }
+        
+                .filter-btn.active {
+                    background: var(--accent-blue);
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                }
+        
+                /* ─── Wallets Section ────────────────────────────── */
+                .wallets-container {
+                    margin-bottom: 56px;
+                }
+        
+                .section-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 20px;
+                }
+        
+                .section-title {
+                    font-size: 18px;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+        
+                .count-pill {
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 12px;
+                    background: var(--bg-card);
+                    padding: 2px 10px;
+                    border-radius: 100px;
+                    border: 1px solid var(--border);
+                    color: var(--accent-cyan);
+                }
+        
+                .wallets-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                    gap: 16px;
+                }
+        
+                .wallet-card {
+                    background: var(--bg-card);
+                    border: 1px solid var(--border);
+                    border-radius: 16px;
+                    padding: 20px;
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+        
+                .wallet-card:hover {
+                    border-color: var(--accent-blue);
+                    transform: translateY(-4px);
+                    box-shadow: var(--shadow-glow);
+                }
+        
+                .wallet-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 4px;
+                    height: 100%;
+                    background: var(--accent-blue);
+                }
+        
+                .wallet-card.defi::before { background: var(--accent-blue); }
+                .wallet-card.ai::before { background: var(--accent-purple); }
+        
+                .wallet-name {
+                    font-size: 16px;
+                    font-weight: 700;
+                    margin-bottom: 4px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+        
+                .wallet-persona {
+                    font-size: 12px;
+                    color: var(--text-secondary);
+                    margin-bottom: 12px;
+                    font-style: italic;
+                }
+        
+                .wallet-sub {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+        
+                .wallet-addr {
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 12px;
+                    color: var(--text-muted);
+                    text-decoration: none;
+                }
+        
+                .wallet-addr:hover { color: var(--accent-cyan); }
+        
+                .tag {
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    letter-spacing: 0.05em;
+                }
+        
+                .tag.defi { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
+                .tag.ai { background: rgba(168, 85, 247, 0.1); color: var(--accent-purple); }
+        
+                /* ─── Signal Feed ────────────────────────────────── */
+                .signal-feed {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+        
+                .signal-card {
+                    background: var(--bg-card);
+                    border: 1px solid var(--border);
+                    border-radius: 20px;
+                    padding: 24px;
+                    display: grid;
+                    grid-template-columns: 60px 1fr 180px 120px;
+                    gap: 24px;
+                    align-items: center;
+                    transition: all 0.3s;
+                    animation: slideUp 0.4s ease-out;
+                }
+        
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+        
+                .signal-card:hover {
+                    border-color: var(--border-glow);
+                    background: var(--bg-card-hover);
+                }
+        
+                .signal-icon-box {
+                    width: 60px;
+                    height: 60px;
+                    background: rgba(16, 185, 129, 0.1);
+                    border: 1px solid rgba(16, 185, 129, 0.2);
+                    border-radius: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 28px;
+                }
+        
+                .signal-main {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+        
+                .signal-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 17px;
+                    font-weight: 700;
+                }
+        
+                .badge {
+                    font-size: 10px;
+                    font-weight: 800;
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                    text-transform: uppercase;
+                }
+        
+                .badge.first-mover {
+                    background: var(--accent-amber);
+                    color: black;
+                    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+                }
+        
+                .badge.kol {
+                    background: #7c65c1;
+                    color: white;
+                    box-shadow: 0 0 10px rgba(124, 101, 193, 0.4);
+                }
+        
+                .farcaster-link {
+                    color: #7c65c1;
+                    text-decoration: none;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+        
+                .farcaster-link:hover {
+                    text-decoration: underline;
+                }
+        
+                .signal-meta {
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 13px;
+                    color: var(--text-secondary);
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                }
+        
+                .signal-protocol {
+                    color: var(--accent-blue);
+                    font-weight: 600;
+                    background: rgba(59, 130, 246, 0.1);
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                }
+        
+                .signal-chart {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+        
+                .sparkline {
+                    width: 100%;
+                    height: 30px;
+                    stroke: var(--accent-green);
+                    stroke-width: 2;
+                    fill: none;
+                    stroke-linecap: round;
+                }
+        
+                .chart-label {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    text-align: center;
+                }
+        
+                .signal-actions {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+        
+                .audience-section {
+                    grid-column: 1 / -1;
+                    margin-top: 16px;
+                    padding-top: 16px;
+                    border-top: 1px solid var(--border);
+                    display: none;
+                    animation: fadeIn 0.3s ease;
+                }
+        
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+        
+                .audience-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                    gap: 12px;
+                    margin-top: 12px;
+                }
+        
+                .audience-item {
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid var(--border);
+                    border-radius: 10px;
+                    padding: 10px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+        
+                .audience-wallet {
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 11px;
+                    color: var(--accent-cyan);
+                }
+        
+                .audience-vol {
+                    font-size: 11px;
+                    color: var(--text-secondary);
+                }
+        
+                .telegram-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    background: rgba(0, 136, 204, 0.1);
+                    color: #0088cc;
+                    padding: 4px 10px;
+                    border-radius: 100px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    border: 1px solid rgba(0, 136, 204, 0.2);
+                }
+        
+                .action-btn {
+                    width: 100%;
+                    padding: 8px;
+                    border-radius: 10px;
+                    border: 1px solid var(--border);
+                    background: rgba(255, 255, 255, 0.03);
+                    color: var(--text-primary);
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: all 0.2s;
+                }
+        
+                .action-btn:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-color: var(--text-secondary);
+                }
+        
+                .action-btn.share { border-color: #1da1f2; color: #1da1f2; }
+                .action-btn.share:hover { background: rgba(29, 161, 242, 0.1); }
+        
+                /* ─── Pending Activity Indicator ─────────────────── */
+                .pending-indicator {
+                    display: none;
+                    background: rgba(59, 130, 246, 0.1);
+                    border: 1px solid var(--accent-blue);
+                    border-radius: 16px;
+                    padding: 16px;
+                    margin-bottom: 24px;
+                    text-align: center;
+                    cursor: pointer;
+                    font-weight: 700;
+                    color: var(--accent-cyan);
+                    animation: glow-pulse 2s infinite;
+                    transition: all 0.2s;
+                    position: sticky;
+                    top: 20px;
+                    z-index: 10;
+                    backdrop-filter: blur(8px);
+                }
+        
+                .pending-indicator:hover {
+                    background: rgba(59, 130, 246, 0.2);
+                    transform: scale(1.01);
+                }
+        
+                @keyframes glow-pulse {
+                    0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
+                    50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); border-color: var(--accent-blue); }
+                    100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
+                }
+        
+                .footer {
+                    margin-top: 80px;
+                    padding: 40px 0;
+                    text-align: center;
+                    border-top: 1px solid var(--border);
+                    color: var(--text-muted);
+                    font-size: 14px;
+                }
+        
+                .footer a {
+                    color: var(--accent-blue);
+                    text-decoration: none;
+                    font-weight: 600;
+                }
+        
+                @media (max-width: 1024px) {
+                    .signal-card { grid-template-columns: 60px 1fr 140px; }
+                    .signal-actions { grid-column: 1 / -1; flex-direction: row; }
+                }
+            </style>
+        </head>
+        
+        <body>
+            <div class="ambient"></div>
+        
+            <!-- Explainer Overlay -->
+            <div id="explainer-overlay" class="explainer-overlay" onclick="toggleExplainer(event)">
+                <div class="explainer-content" onclick="event.stopPropagation()">
+                    <button class="close-explainer" onclick="toggleExplainer()">×</button>
+                    <h2 class="explainer-title">How Whale-In-The-Room Works</h2>
+                    
+                    <div class="explainer-section">
+                        <h3>📍 The Discovery Cohort</h3>
+                        <p>
+                            The top horizontal list represents our <b>Active Discovery Cohort</b>. These are the 100 most active, high-volume power-users on the Base chain today, identified via custom Allium SQL jobs. We track their every move across <b>DeFi</b> and <b>AI</b> verticals.
+                        </p>
+                    </div>
+        
+                    <div class="explainer-section">
+                        <h3>🚨 Signal A: The First-Time Interaction</h3>
+                        <p>
+                            Our core marketing signal is <b>Signal A</b>. This fires only when a tracked whale interacts with a smart contract for the <i>very first time</i>. For marketers, this is the ultimate lead—it identifies exactly when "smart money" is exploring a new protocol before it goes mainstream.
+                        </p>
+                    </div>
+        
+                    <div class="explainer-section">
+                        <h3>🔥 Heat & Actionability</h3>
+                        <p>
+                            Each signal is scored with 🔥 icons. This algorithm considers the whale's net worth, their historical accuracy, and the current growth rate of the target contract. 5 fire icons indicate a high-conviction "Alpha" signal.
+                        </p>
+                    </div>
+        
+                    <div class="explainer-section">
+                        <h3>🔍 Find Similar Wallets</h3>
+                        <p>
+                            Curious if a signal is just one outlier or a growing trend? Click <b>"Find Similar Wallets"</b> to trigger a real-time Allium SQL query that finds 50 other high-net-worth wallets interacting with the same contract.
+                        </p>
+                    </div>
+        
+                    <div class="explainer-section">
+                        <h3>🟣 Social Identity</h3>
+                        <p>
+                            We enrich blockchain data with Farcaster profiles. If a whale has a linked Warpcast account, we display their username and follower count, helping you identify <b>Key Opinion Leaders (KOLs)</b> in real-time.
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 40px;">
+                        <button class="action-btn" onclick="toggleExplainer()" style="max-width: 200px; margin: 0 auto; background: var(--accent-blue);">Got it, let's go!</button>
                     </div>
                 </div>
-            `).join('');
-        }
-
-        function renderSignals() {
-            const feed = document.getElementById('signal-feed');
-            const filtered = signals.filter(s => currentFilter === 'All' || s.vertical === currentFilter);
-
-            if (filtered.length === 0) {
-                feed.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">Waiting for new ${currentFilter} signals from the blockchain...</div>`;
-                return;
-            }
-
-            try {
-                // Show newest first
-                feed.innerHTML = filtered.slice().map(s => {
-                    const fire = '🔥'.repeat(s.actionability_score || 3);
-                    const firstBadge = s.is_first_mover ? `<span class="badge first-mover">⚡ First Mover</span>` : '';
-                    
-                    // Social Identity Logic
-                    let displayName = s.fc_display_name || s.display_name || s.context.wallet_label;
-                    if (s.fc_username) {
-                        displayName = `<a href="https://warpcast.com/${s.fc_username}" target="_blank" class="farcaster-link">@${s.fc_username}</a>`;
+            </div>
+        
+            <div class="container">
+                <!-- Header -->
+                <header class="header">
+                    <div class="header-left">
+                        <div class="logo">🐋</div>
+                        <div class="title-group">
+                            <h1>Whale-In-The-Room</h1>
+                            <p>Insight Engine · Marketing Signals · Base Chain</p>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <div class="help-icon" onclick="toggleExplainer()" title="How it works">?</div>
+                        <div class="connection-indicator">
+                            <div class="pulse-dot"></div>
+                            <span id="status-text">Live Connection</span>
+                        </div>
+                    </div>
+                </header>
+        
+                <!-- Filter Bar -->
+                <div class="filter-bar">
+                    <button class="filter-btn active" onclick="setFilter('All')">All Signals</button>
+                    <button class="filter-btn" onclick="setFilter('DeFi')">DeFi</button>
+                    <button class="filter-btn" onclick="setFilter('AI')">AI</button>
+                </div>
+        
+                <!-- Wallets Grid -->
+                <div class="wallets-container">
+                    <div class="section-header">
+                        <div class="section-title">📍 Active Discovery Cohort: Feb 2026 <span class="count-pill" id="wallet-count">100</span>
+                            <i style="font-weight: 400; font-size: 13px; color: var(--text-muted); margin-left: 12px; font-style: italic;">Top 100 Power-Users (AI & DeFi) discovered via Allium SQL</i>
+                        </div>
+                    </div>
+                    <div class="wallets-grid" id="wallets-grid">
+                        <div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">Loading dynamic cohort from Convex...</div>
+                    </div>
+                </div>
+        
+                <!-- Signal Feed -->
+                <div class="section-header">
+                    <div class="section-title">🚨 Actionable Alpha Feed <span class="count-pill" id="signal-count">0</span>
+                        <i style="font-weight: 400; font-size: 13px; color: var(--text-muted); margin-left: 12px; font-style: italic;">Interacting with cards will pause feed</i>
+                    </div>
+                </div>
+                
+                <div id="pending-indicator" class="pending-indicator" onclick="resumeFeed()">
+                    ⚡ <span id="pending-count">0</span> new signals incoming. Click to resume live updates.
+                </div>
+        
+                <div id="signal-feed" class="signal-feed">
+                    <div style="text-align:center; padding: 40px; color: var(--text-muted);">Connecting to blockchain via Convex...</div>
+                </div>
+        
+                <!-- Future Enhancements Teaser -->
+                <div style="margin-top: 60px; padding: 32px; background: rgba(59, 130, 246, 0.05); border: 1px dashed var(--border); border-radius: 24px; text-align: center;">
+                    <div style="font-size: 14px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;">
+                        🚀 Coming Soon: The Discovery Loop
+                    </div>
+                    <h3 style="font-size: 20px; margin-bottom: 12px;">Automated Lookalike Expansion</h3>
+                    <p style="max-width: 600px; margin: 0 auto; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+                        Soon, every time a Rank #1-10 whale interacts with a new contract, the engine will automatically run a 
+                        <b>Lookalike SQL Job</b> to find 50 similar high-net-worth wallets and add them to your temporary monitoring pool.
+                    </p>
+                </div>
+        
+                <!-- Footer -->
+                <footer class="footer">
+                    Powered by <a href="https://allium.so">Allium</a> & <a href="https://convex.dev">Convex</a> · Social Data via Farcaster
+                </footer>
+            </div>
+        
+            <script>
+                const CONVEX_URL = "https://content-herring-575.convex.cloud";
+                
+                let client;
+                let currentFilter = 'All';
+                let signals = [];
+                let isPaused = false;
+                let latestData = [];
+                let cohort = [];
+        
+                function toggleExplainer(e) {
+                    const overlay = document.getElementById('explainer-overlay');
+                    if (overlay.style.display === 'flex') {
+                        overlay.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                    } else {
+                        overlay.style.display = 'flex';
+                        document.body.style.overflow = 'hidden';
+                    }
+                }
+        
+                // ─── Convex Subscription ──────────────────────────────
+                
+                function init() {
+                    if (typeof convex === 'undefined') {
+                        setTimeout(init, 100);
+                        return;
                     }
                     
-                    const kolBadge = (s.fc_followers > 5000) ? `<span class="badge kol">🟣 KOL</span>` : '';
+                    client = new convex.ConvexClient(CONVEX_URL);
                     
-                    const time = s.timestamp ? new Date(s.timestamp).toLocaleTimeString() : 'Recently';
-                    const shareText = encodeURIComponent(`🚨 Whale Alert: ${s.fc_username ? '@'+s.fc_username : (s.display_name || s.wallet.slice(0, 8))} just interacted with a new protocol on Base: ${s.context.contract_protocol || s.target_contract.slice(0, 10)}! ${fire}\n\nVia Whale-In-The-Room (Powered by Allium & Convex)`);
-
-                    return `
-                        <div class="signal-card" onclick="pauseFeed()">
-                            <div class="signal-icon-box">🆕</div>
-                            <div class="signal-main">
-                                <div class="signal-title">
-                                    ${displayName} ${fire}
-                                    <span class="badge ${s.vertical.toLowerCase()}">${s.context.wallet_label}</span>
-                                    ${firstBadge}
-                                    ${kolBadge}
-                                </div>
-                                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; font-style: italic;">
-                                    ${s.persona || 'Active Power-User'}
-                                </div>
-                                <div class="signal-meta">
-                                    <span>Target: <a href="https://basescan.org/address/${s.target_contract}" target="_blank" style="color:inherit; text-decoration:none;">${s.target_contract.slice(0, 12)}...</a></span>
-                                    ${s.context.contract_protocol ? `<span class="signal-protocol">${s.context.contract_protocol}</span>` : `<span class="tag" style="background:rgba(255,255,255,0.05)">${s.vertical_tag || 'Protocol'}</span>`}
-                                    <span>👥 ${s.common_neighbors || 0} Neighbors</span>
-                                </div>
-                                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                                    Action: ${s.context.method_name || 'interaction'} · ${time} ${s.fc_followers ? `· 👥 ${s.fc_followers.toLocaleString()} followers` : ''}
-                                </div>
+                    client.onUpdate("signals:list", {}, (updatedSignals) => {
+                        latestData = updatedSignals;
+                        
+                        if (!isPaused) {
+                            signals = updatedSignals;
+                            renderSignals();
+                            document.getElementById('signal-count').textContent = signals.length;
+                        } else {
+                            updatePendingCount();
+                        }
+                    }, (error) => {
+                        console.error("Subscription failed:", error);
+                    });
+        
+                    // Fetch dynamic cohort
+                    client.query("allium:getCohort").then(data => {
+                        cohort = data;
+                        renderWallets();
+                        document.getElementById('wallet-count').textContent = cohort.length;
+                    });
+                }
+        
+                window.addEventListener('load', init);
+        
+                function pauseFeed() {
+                    if (!isPaused) {
+                        isPaused = true;
+                    }
+                }
+        
+                function resumeFeed() {
+                    isPaused = false;
+                    signals = latestData;
+                    document.getElementById('pending-indicator').style.display = 'none';
+                    renderSignals();
+                    document.getElementById('signal-count').textContent = signals.length;
+                }
+        
+                function updatePendingCount() {
+                    const currentIds = new Set(signals.map(s => s._id));
+                    const pending = latestData.filter(s => !currentIds.has(s._id));
+                    
+                    const indicator = document.getElementById('pending-indicator');
+                    const countSpan = document.getElementById('pending-count');
+                    
+                    if (pending.length > 0) {
+                        indicator.style.display = 'block';
+                        countSpan.textContent = pending.length;
+                    } else {
+                        indicator.style.display = 'none';
+                    }
+                }
+        
+                function setFilter(filter) {
+                    currentFilter = filter;
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.textContent.includes(filter));
+                    });
+                    renderSignals();
+                }
+        
+                // ─── Rendering ────────────────────────────────────────
+        
+                function renderWallets() {
+                    const grid = document.getElementById('wallets-grid');
+                    if (cohort.length === 0) return;
+        
+                    // Sort by rank and show all 100 in a compact, scrollable grid
+                    grid.style.display = 'flex';
+                    grid.style.overflowX = 'auto';
+                    grid.style.gap = '12px';
+                    grid.style.paddingBottom = '12px';
+                    
+                    grid.innerHTML = cohort.sort((a,b) => a.rank - b.rank).map(w => `
+                        <div class="wallet-card ${w.vertical.toLowerCase()}" style="min-width: 220px; flex-shrink: 0; padding: 12px;">
+                            <div class="wallet-name" style="font-size: 14px;">Rank #${w.rank} ${w.vertical}</div>
+                            <div class="wallet-persona" style="font-size: 11px; margin-bottom: 8px;">${w.persona}</div>
+                            <div class="wallet-sub">
+                                <a href="https://basescan.org/address/${w.address}" target="_blank" class="wallet-addr">${w.address.slice(0, 6)}...${w.address.slice(-4)}</a>
+                                <span class="tag ${w.vertical.toLowerCase()}" style="font-size: 9px;">${(w.volume_7d_usd / 1e6).toFixed(1)}M</span>
                             </div>
-                            <div class="signal-chart">
-                                <svg class="sparkline" viewBox="0 0 100 30">
-                                    <path d="${generateMockPath()}"></path>
-                                </svg>
-                                <div class="chart-label">Live Alpha Trajectory</div>
-                            </div>
-                            <div class="signal-actions">
-                                <div class="telegram-badge">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.35-.97.52-1.33.51-.4-.01-1.18-.23-1.75-.41-.7-.23-1.26-.35-1.21-.74.03-.2.3-.41.82-.62 3.2-1.39 5.33-2.31 6.4-2.76 3.04-1.28 3.67-1.5 4.08-1.51.09 0 .29.02.42.13.11.09.15.21.16.33 0 .04.01.12 0 .18z"/></svg>
-                                    Alert Active
-                                </div>
-                                <button class="action-btn share" onclick="window.open('https://twitter.com/intent/tweet?text=${shareText}')">
-                                    🐦 Share to X
-                                </button>
-                                <button class="action-btn" onclick="toggleAudience('${s.target_contract}', this)">
-                                    🔍 Analyze Audience
-                                </button>
-                            </div>
-                            <div id="audience-${s.target_contract}" class="audience-section">
-                                <div style="font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 8px;">
-                                    🎯 Lookalike Audience (Top 50 Wallets)
-                                </div>
-                                <div class="audience-grid" id="grid-${s.target_contract}">
-                                    <div style="color: var(--text-muted); font-size: 12px;">Querying Allium SQL...</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (err) {
-                console.error("Rendering failed:", err);
-            }
-        }
-
-        async function toggleAudience(contract, btn) {
-            const section = document.getElementById(`audience-${contract}`);
-            const grid = document.getElementById(`grid-${contract}`);
-            
-            if (section.style.display === 'block') {
-                section.style.display = 'none';
-                btn.textContent = '🔍 Analyze Audience';
-                return;
-            }
-
-            section.style.display = 'block';
-            btn.textContent = '⌛ Loading...';
-
-            try {
-                const results = await client.query("signals:listTargetAudience", { target_contract: contract });
-                if (results && results.length > 0) {
-                    grid.innerHTML = results.map(w => `
-                        <div class="audience-item">
-                            <div class="audience-wallet">${w.wallet_address.slice(0, 10)}...</div>
-                            <div class="audience-vol">$${Math.round(w.total_volume_usd).toLocaleString()} vol</div>
                         </div>
                     `).join('');
-                } else {
-                    grid.innerHTML = `<div style="color: var(--text-secondary); font-size: 12px; padding: 10px;">No lookalike wallets found yet. Allium SQL job might be running.</div>`;
                 }
-            } catch (err) {
-                grid.innerHTML = `<div style="color: var(--accent-red); font-size: 12px;">Failed to load audience.</div>`;
-            }
-            btn.textContent = '📊 Hide Audience';
-        }
-
-        function generateMockPath() {
-            let points = [];
-            for (let i = 0; i <= 10; i++) {
-                points.push(`${i * 10},${Math.random() * 30}`);
-            }
-            return `M ${points.join(' L ')}`;
-        }
-    </script>
-</body>
-
-</html>
+        
+                function renderSignals() {
+                    const feed = document.getElementById('signal-feed');
+                    const filtered = signals.filter(s => currentFilter === 'All' || s.vertical === currentFilter);
+        
+                    if (filtered.length === 0) {
+                        feed.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">Waiting for new ${currentFilter} signals from the blockchain...</div>`;
+                        return;
+                    }
+        
+                    try {
+                        // Show newest first
+                        feed.innerHTML = filtered.slice().map(s => {
+                            const fire = '🔥'.repeat(s.actionability_score || 3);
+                            const firstBadge = s.is_first_mover ? `<span class="badge first-mover">⚡ First Mover</span>` : '';
+                            
+                            // Social Identity Logic
+                            let displayName = s.fc_display_name || s.display_name || s.context.wallet_label;
+                            if (s.fc_username) {
+                                displayName = `<a href="https://warpcast.com/${s.fc_username}" target="_blank" class="farcaster-link">@${s.fc_username}</a>`;
+                            }
+                            
+                            const kolBadge = (s.fc_followers > 5000) ? `<span class="badge kol">🟣 KOL</span>` : '';
+                            
+                            const time = s.timestamp ? new Date(s.timestamp).toLocaleTimeString() : 'Recently';
+                            const shareText = encodeURIComponent(`🚨 Whale Alert: ${s.fc_username ? '@'+s.fc_username : (s.display_name || s.wallet.slice(0, 8))} just interacted with a new protocol on Base: ${s.context.contract_protocol || s.target_contract.slice(0, 10)}! ${fire}\n\nVia Whale-In-The-Room (Powered by Allium & Convex)`);
+        
+                            const netWorth = s.wallet_net_worth ? `<span class="badge" style="background:rgba(16, 185, 129, 0.1); color:var(--accent-green); border:1px solid rgba(16, 185, 129, 0.2)">💰 ${(s.wallet_net_worth / 1e6).toFixed(1)}M Net Worth</span>` : '';
+                            const growthRate = s.contract_growth_rate ? `<span class="badge" style="background:rgba(34, 211, 238, 0.1); color:var(--accent-cyan); border:1px solid rgba(34, 211, 238, 0.2)">📈 +${Math.round(s.contract_growth_rate)}% 24h Users</span>` : '';
+        
+                            return `
+                                <div class="signal-card" onclick="pauseFeed()">
+                                    <div class="signal-icon-box">🆕</div>
+                                    <div class="signal-main">
+                                        <div class="signal-title">
+                                            ${displayName} ${fire}
+                                            <span class="badge ${s.vertical.toLowerCase()}">${s.context.wallet_label}</span>
+                                            ${netWorth}
+                                            ${firstBadge}
+                                            ${kolBadge}
+                                        </div>
+                                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; font-style: italic;">
+                                            ${s.persona || 'Active Power-User'}
+                                        </div>
+                                        <div class="signal-meta">
+                                            <span>Target: <a href="https://basescan.org/address/${s.target_contract}" target="_blank" style="color:inherit; text-decoration:none;">${s.target_contract.slice(0, 12)}...</a></span>
+                                            ${s.context.contract_protocol ? `<span class="signal-protocol">${s.context.contract_protocol}</span>` : `<span class="tag" style="background:rgba(255,255,255,0.05)">${s.vertical_tag || 'Protocol'}</span>`}
+                                            <span>👥 ${s.common_neighbors || 0} Neighbors</span>
+                                            ${growthRate}
+                                        </div>
+                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                                            <b>Flow:</b> ${s.token_flow || s.context.method_name || 'interaction'} · ${time} ${s.fc_followers ? `· 👥 ${s.fc_followers.toLocaleString()} followers` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="signal-chart">
+                                        <svg class="sparkline" viewBox="0 0 100 30">
+                                            <path d="${generateMockPath()}"></path>
+                                        </svg>
+                                        <div class="chart-label">Live Alpha Trajectory</div>
+                                    </div>
+                                    <div class="signal-actions">
+                                        <div class="telegram-badge">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.35-.97.52-1.33.51-.4-.01-1.18-.23-1.75-.41-.7-.23-1.26-.35-1.21-.74.03-.2.3-.41.82-.62 3.2-1.39 5.33-2.31 6.4-2.76 3.04-1.28 3.67-1.5 4.08-1.51.09 0 .29.02.42.13.11.09.15.21.16.33 0 .04.01.12 0 .18z"/></svg>
+                                            Alert Active
+                                        </div>
+                                        <button class="action-btn share" onclick="window.open('https://twitter.com/intent/tweet?text=${shareText}')">
+                                            🐦 Share to X
+                                        </button>
+                                        <button class="action-btn" onclick="toggleAudience('${s.target_contract}', this)">
+                                            🔍 Find Similar Wallets
+                                        </button>
+                                    </div>
+                                    <div id="audience-${s.target_contract}" class="audience-section">
+                                        <div style="font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 8px;">
+                                            🎯 Lookalike Audience (Top 50 Wallets)
+                                        </div>
+                                        <div class="audience-grid" id="grid-${s.target_contract}">
+                                            <div style="color: var(--text-muted); font-size: 12px;">Querying Allium SQL...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } catch (err) {
+                        console.error("Rendering failed:", err);
+                    }
+                }
+        
+                async function toggleAudience(contract, btn) {
+                    const section = document.getElementById(`audience-${contract}`);
+                    const grid = document.getElementById(`grid-${contract}`);
+                    
+                    if (section.style.display === 'block') {
+                        section.style.display = 'none';
+                        btn.textContent = '🔍 Find Similar Wallets';
+                        return;
+                    }
+        
+                    section.style.display = 'block';
+                    btn.textContent = '⌛ Loading...';
+        
+                    try {
+                        const results = await client.query("signals:listTargetAudience", { target_contract: contract });
+                        if (results && results.length > 0) {
+                            grid.innerHTML = results.map(w => `
+                                <div class="audience-item">
+                                    <div class="audience-wallet">${w.wallet_address.slice(0, 10)}...</div>
+                                    <div class="audience-vol">${Math.round(w.total_volume_usd).toLocaleString()} vol</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            grid.innerHTML = `<div style="color: var(--text-secondary); font-size: 12px; padding: 10px;">No lookalike wallets found yet. Allium SQL job might be running.</div>`;
+                        }
+                    } catch (err) {
+                        grid.innerHTML = `<div style="color: var(--accent-red); font-size: 12px;">Failed to load audience.</div>`;
+                    }
+                    btn.textContent = '📊 Hide Wallets';
+                }
+        
+                function generateMockPath() {
+                    let points = [];
+                    for (let i = 0; i <= 10; i++) {
+                        points.push(`${i * 10},${Math.random() * 30}`);
+                    }
+                    return `M ${points.join(' L ')}`;
+                }
+            </script>
+        </body>
+        
+        </html>

@@ -15,7 +15,7 @@ import contracts from './config/contracts.json' assert { type: 'json' };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Vertical = 'DeFi' | 'AI' | 'SocialFi';
+export type Vertical = 'DeFi' | 'AI';
 
 export interface TrackedWallet {
     address: string;

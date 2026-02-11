@@ -14,8 +14,7 @@ export const addSignal = mutation({
     id: v.string(),
     type: v.literal("NEW_CONTRACT"),
     wallet: v.string(),
-    vertical: v.union(v.literal("DeFi"), v.literal("AI"), v.literal("SocialFi")),
-    transaction_hash: v.string(),
+            vertical: v.union(v.literal("DeFi"), v.literal("AI")),    transaction_hash: v.string(),
     target_contract: v.string(),
     timestamp: v.string(),
     actionability_score: v.number(),
@@ -24,6 +23,9 @@ export const addSignal = mutation({
     common_neighbors: v.number(),
     display_name: v.union(v.string(), v.null()),
     persona: v.union(v.string(), v.null()),
+    wallet_net_worth: v.optional(v.number()),
+    token_flow: v.optional(v.string()),
+    contract_growth_rate: v.optional(v.number()),
     // Farcaster Social Identity
     fc_username: v.optional(v.string()),
     fc_display_name: v.optional(v.string()),
@@ -67,9 +69,15 @@ export const addSignal = mutation({
     // 4. Enrichment: Check if First Mover (first one in our cohort to hit it)
     args.is_first_mover = neighbors.length === 0;
 
-    await ctx.db.insert("signals", args);
+    const signalId = await ctx.db.insert("signals", args);
 
-    // 5. Trigger Telegram Notification (only for high-value ranks)
+    // 5. Trigger Async Enrichment: Growth Rate
+    await ctx.scheduler.runAfter(0, api.allium.fetchGrowthRate, {
+        targetContract: args.target_contract,
+        signalId: signalId
+    });
+
+    // 6. Trigger Telegram Notification (only for high-value ranks)
     if (args.actionability_score >= 4) {
         await ctx.scheduler.runAfter(0, api.notifications.sendTelegramAlert, {
           whaleName: args.display_name || args.context.wallet_label,
@@ -78,7 +86,7 @@ export const addSignal = mutation({
         });
     }
 
-    // 6. Trigger Audience Expansion (Lookalike SQL)
+    // 7. Trigger Audience Expansion (Lookalike SQL)
     await ctx.scheduler.runAfter(0, api.allium.findLookalikeAudience, {
       targetContract: args.target_contract,
     });

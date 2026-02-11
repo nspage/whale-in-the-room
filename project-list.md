@@ -1,9 +1,8 @@
-Vertical-Specific Targets on Base
+# Vertical-Specific Targets on Base
+
 Using Allium’s Explorer API (SQL) and Semantic Search, you can isolate whales within specific "neighborhoods":
 
 | Vertical | Vertical-Specific Target | Allium Discovery Path |
 |----------|----------------------------|-----------------------|
 | DeFi | Wallets with $500k+ in Aerodrome or Uniswap LPs on Base. | schemas/search?q=DEX+trades+liquidity |
 | AI | Wallets holding significant amounts of AI infrastructure tokens (e.g., Virtuals, Morpheus). | /developer/tokens/search?q=AI |
-| SocialFi | Wallets with high interaction counts on Farcaster/Warpcast-linked contracts. | schemas/browse?path=base.raw.logs |
-| Gaming | Wallets holding rare in-game assets or completing high volumes of game transactions. | schemas/search?q=NFT+transfers |

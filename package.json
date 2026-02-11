@@ -1,7 +1,7 @@
 {
   "name": "whale-in-the-room",
   "version": "1.0.0",
-  "description": "Real-time Base chain alerting system tracking Whale & KOL behavior across DeFi, AI, and SocialFi verticals",
+  "description": "Real-time Base chain alerting system tracking Whale & KOL behavior across DeFi and AI verticals",
   "main": "src/main.ts",
   "scripts": {
     "validate": "tsx src/validate-chain.ts",

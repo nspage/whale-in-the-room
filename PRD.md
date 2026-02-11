@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-**Whale-In-The-Room** is a real-time Base chain alerting system that tracks Whale & KOL (Key Opinion Leader) behavior across **DeFi**, **AI**, and **SocialFi** verticals. It identifies high-value wallet activity and surfaces **actionable marketing signals** for Web3 growth teams, community managers, and marketers.
+**Whale-In-The-Room** is a real-time Base chain alerting system that tracks Whale & KOL (Key Opinion Leader) behavior across **DeFi** and **AI** verticals. It identifies high-value wallet activity and surfaces **actionable marketing signals** for Web3 growth teams, community managers, and marketers.
 
 The system is powered by **[Allium](https://allium.so)** — leveraging their Explorer SQL API, Wallet API, and Price API to discover whales, monitor their on-chain behavior, and enrich signals with protocol context.
 
@@ -29,7 +29,7 @@ Web3 marketers currently monitor whale activity manually through block explorers
 | **Community Managers** | Share whale alerts on social channels to drive engagement |
 | **BD / Partnerships** | Spot emerging protocols that whales are adopting early for outbound |
 | **DeFi Analysts** | Track cross-protocol whale migration patterns |
-| **AI/SocialFi Researchers** | Monitor smart-money positioning in nascent verticals |
+| **AI Researchers** | Monitor smart-money positioning in nascent verticals |
 
 ---
 
@@ -104,9 +104,8 @@ Three curated SQL queries execute against Allium's Explorer API to identify the 
 |----------|-------------|-----------|-------------|
 | **DeFi** | Top DEX traders on Aerodrome & Uniswap V3 (30d) | >$500k volume | `base.dex.trades` |
 | **AI** | Top accumulators of VIRTUAL & OLAS tokens (30d) | >$100k USD inflow | `base.assets.erc20_token_transfers` |
-| **SocialFi** | Most active Farcaster contract interactors (30d) | >50 transactions | `base.raw.transactions` |
 
-**Output:** `data/tracked-wallets.json` — 6 wallets (3 DeFi + 3 AI; SocialFi query defined but not yet seeded).
+**Output:** `data/tracked-wallets.json` — 6 wallets (3 DeFi + 3 AI).
 
 ### 4.2 Real-Time Polling Engine
 
@@ -134,7 +133,7 @@ Each detected signal is enriched with:
 |-------|-------------|--------|
 | `actionability_score` | 1–5 🔥 scale based on 30d trading volume | Computed from wallet metadata |
 | `is_first_mover` | `true` if this wallet is the *first* tracked whale to hit this contract | Global `seenContracts` set |
-| `vertical_tag` | Inferred vertical (DeFi/AI/SocialFi) from protocol identification | `contracts.json` lookup |
+| `vertical_tag` | Inferred vertical (DeFi/AI) from protocol identification | `contracts.json` lookup |
 | `common_neighbors` | Count of other tracked whales who also interacted with this contract | Cross-wallet set intersection |
 | `fc_username` | Farcaster handle (e.g. `@vitalik`) | Allium SQL lookup (farcaster_profiles) |
 | `fc_followers` | Farcaster follower count | Allium SQL lookup (farcaster_profiles) |
@@ -180,13 +179,13 @@ A premium single-page application served at `localhost:3000`:
 **Design System:**
 - Dark obsidian background with ambient radial gradients
 - Outfit (display) + JetBrains Mono (data) typography
-- Color-coded verticals: Blue (DeFi), Purple (AI), Amber (SocialFi)
+- Color-coded verticals: Blue (DeFi), Purple (AI)
 - Smooth slide-up animations for new signals
 - Responsive grid layout (breakpoint at 1024px)
 
 **UI Components:**
 - **Status Badge** — Live engine status with green pulse dot and cycle counter
-- **Filter Bar** — Toggle between All / DeFi / AI / SocialFi signals
+- **Filter Bar** — Toggle between All / DeFi / AI signals
 - **Tracked Wallets Grid** — Cards showing ENS name, persona, address (linked to BaseScan), vertical tag, and known contract count
 - **Signal Feed** — Reverse-chronological feed with:
   - Actionability fire scale (🔥)
@@ -228,7 +227,7 @@ Also tracks Farcaster registry contracts (IdRegistry, KeyRegistry, StorageRegist
 ```typescript
 interface TrackedWallet {
     address: string;           // Lowercase hex
-    vertical: 'DeFi' | 'AI' | 'SocialFi';
+    vertical: 'DeFi' | 'AI';
     label: string;             // "DeFi Whale #1"
     knownContracts: Set<string>; // Populated at warm-up, grows over time
     lastSeenTxHash: string | null;
@@ -354,9 +353,7 @@ The dashboard is being evolved from a monitoring tool into an **Insight Engine**
 | Feature | Priority | Description |
 |---------|----------|-------------|
 | **Farcaster Resolution** | Done ✅ | Dynamic social identity lookup via Allium SQL |
-| **SocialFi Wallet Seeding** | High | Run the SocialFi SQL query and add wallets to tracking |
 | **Persistent Storage** | Done ✅ | Migrated from JSON to Convex Database |
-| **Gaming Vertical** | Medium | Add Gaming whale identification (NFT transfers, game txns) |
 | **Signal B: Large LP** | Medium | Re-enable with API budget optimization |
 | **Notifications** | Medium | Telegram/Discord webhook for high-score signals |
 | **Historical Dashboard** | Low | Time-series view of signals over days/weeks |
@@ -373,7 +370,6 @@ The dashboard is being evolved from a monitoring tool into an **Insight Engine**
 | Wallet API returns paginated `{items}` | Must unwrap response envelopes | Client handles both formats |
 | No real ENS/Farcaster resolution | Social identities are simulated | Hardcoded map for MVP; real API planned |
 | Signal B stripped | No LP position alerts | Preserves API budget for Signal A |
-| SocialFi wallets not yet seeded | Only DeFi + AI verticals active | SQL query defined, needs execution |
 | JSON file persistence | No concurrent access safety | Migrated to Convex for safe cloud storage |
 | Mock sparkline data | Charts don't reflect real activity | `generateMockPath()` placeholder |
 | Single-file dashboard | Limited maintainability | Acceptable for MVP; component split planned |
@@ -435,7 +431,7 @@ npm run identify
 | **Actionability Score** | 1–5 fire scale ranking signal importance based on wallet volume |
 | **Common Neighbors** | Number of other tracked whales who also interacted with the same contract |
 | **Warm-Up** | Startup phase that loads historical transactions to prevent false positives |
-| **Vertical** | Market category: DeFi, AI, SocialFi, or Gaming |
+| **Vertical** | Market category: DeFi or AI |
 | **KOL** | Key Opinion Leader — influential crypto figure |
 
 ---

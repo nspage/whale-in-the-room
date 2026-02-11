@@ -6,8 +6,7 @@ export default defineSchema({
     id: v.string(), // External ID (sig-1, sig-2, etc.)
     type: v.literal("NEW_CONTRACT"),
     wallet: v.string(),
-    vertical: v.union(v.literal("DeFi"), v.literal("AI"), v.literal("SocialFi")),
-    transaction_hash: v.string(),
+            vertical: v.union(v.literal("DeFi"), v.literal("AI")),    transaction_hash: v.string(),
     target_contract: v.string(),
     timestamp: v.string(),
     actionability_score: v.number(),
@@ -16,6 +15,10 @@ export default defineSchema({
     common_neighbors: v.number(),
     display_name: v.union(v.string(), v.null()),
     persona: v.union(v.string(), v.null()),
+    // Enrichment Data
+    wallet_net_worth: v.optional(v.number()),
+    token_flow: v.optional(v.string()),
+    contract_growth_rate: v.optional(v.number()),
     // Farcaster Social Identity
     fc_username: v.optional(v.string()),
     fc_display_name: v.optional(v.string()),

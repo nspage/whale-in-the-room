@@ -44,7 +44,7 @@ function printBanner() {
 ║   🐋  W H A L E - I N - T H E - R O O M                     ║
 ║                                                              ║
 ║   Real-Time Base Chain Alerting System                       ║
-║   Verticals: DeFi · AI · SocialFi                            ║
+║   Verticals: DeFi · AI                                       ║
 ║   Signal: New Smart Contract Interactions                    ║
 ║                                                              ║
 ║   Powered by Allium                                          ║

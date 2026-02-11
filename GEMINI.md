@@ -1,6 +1,6 @@
 # 🐋 Whale-In-The-Room Context
 
-This project is a real-time Base chain alerting system that tracks Whale & KOL behavior across DeFi, AI, and SocialFi verticals. It identifies high-value wallet activity and surfaces actionable marketing signals.
+This project is a real-time Base chain alerting system that tracks Whale & KOL behavior across DeFi and AI verticals. It identifies high-value wallet activity and surfaces actionable marketing signals.
 
 ## Project Overview
 

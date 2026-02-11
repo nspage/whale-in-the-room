@@ -52,7 +52,7 @@ export const refreshCohort = action({
     let totalAdded = 0;
 
     for (const v of verticals) {
-      console.log(`Discovering Top 50 ${v.name} wallets...`);
+      console.log("Discovering Top 50 " + v.name + " wallets...");
       
       const runRes = await fetch("https://api.allium.so/api/v1/explorer/queries/" + queryId + "/run-async", {
         method: "POST",
@@ -173,7 +173,28 @@ export const pollWhaleActivity = action({
       }
     } catch (e) { console.error("FC Batch Failed", e); }
 
-    // 3. Batch Polling for Transactions (Split into batches of 20 - Allium Limit)
+    // 3. Batch Polling for Transactions & Balances
+    const netWorthMap = new Map();
+    try {
+      // Fetch balances in batches of 20
+      for (let i = 0; i < wallets.length; i += 20) {
+        const batch = wallets.slice(i, i + 20);
+        const balRes = await fetch("https://api.allium.so/api/v1/developer/wallet/balances", {
+          method: "POST",
+          headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+          body: JSON.stringify(batch.map(w => ({ chain: "base", address: w.address }))),
+        });
+        if (balRes.ok) {
+          const balData = await balRes.json();
+          (balData.items || []).forEach((item: any) => {
+            const total = (item.tokens || []).reduce((acc: number, t: any) => acc + (t.usd_value || 0), 0);
+            netWorthMap.set(item.address.toLowerCase(), total);
+          });
+        }
+        await new Promise(r => setTimeout(r, 1100)); // Rate limit safety
+      }
+    } catch (e) { console.error("Balance Poll Failed", e); }
+
     try {
       const batchSize = 20;
       const batches = [];
@@ -182,7 +203,7 @@ export const pollWhaleActivity = action({
       }
 
       for (const batch of batches) {
-        console.log(`Polling batch of ${batch.length} wallets...`);
+        console.log("Polling batch of " + batch.length + " wallets...");
         const pollRes = await fetch("https://api.allium.so/api/v1/developer/wallet/transactions", {
           method: "POST",
           headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
@@ -190,13 +211,13 @@ export const pollWhaleActivity = action({
         });
 
         if (!pollRes.ok) {
-          console.error(`Batch poll failed: ${await pollRes.text()}`);
+          console.error("Batch poll failed: " + await pollRes.text());
           continue;
         }
 
         const data = await pollRes.json();
         const transactions = data.items || [];
-        console.log(`Received ${transactions.length} transactions for batch.`);
+        console.log("Received " + transactions.length + " transactions for batch.");
         
         // Group transactions by wallet
         const txByWallet = new Map();
@@ -209,8 +230,22 @@ export const pollWhaleActivity = action({
         for (const wallet of batch) {
           const walletTx = txByWallet.get(wallet.address.toLowerCase()) || [];
           const fc_info = fcMap.get(wallet.address.toLowerCase()) || {};
+          const netWorth = netWorthMap.get(wallet.address.toLowerCase()) || 0;
 
           for (const tx of walletTx) {
+            // Parse Token Flow
+            let tokenFlow = "";
+            if (tx.token_transfers && tx.token_transfers.length > 0) {
+                const transfers = tx.token_transfers
+                    .sort((a: any, b: any) => (b.usd_amount || 0) - (a.usd_amount || 0))
+                    .slice(0, 2);
+                tokenFlow = transfers.map((t: any) => 
+                    (t.amount > 1000 ? (t.amount/1000).toFixed(1) + "k" : t.amount.toFixed(1)) + " " + t.symbol
+                ).join(" & ");
+            }
+
+            // Growth rate will be fetched asynchronously or via a separate process to avoid blocking
+            // For now, we fire the mutation and let it enrich if possible
             await ctx.runMutation(api.signals.addSignal, {
               id: "convex-" + tx.hash.slice(0, 10),
               type: "NEW_CONTRACT",
@@ -219,12 +254,14 @@ export const pollWhaleActivity = action({
               transaction_hash: tx.hash,
               target_contract: tx.to_address || "0x0",
               timestamp: tx.block_timestamp,
-              actionability_score: wallet.rank <= 10 ? 5 : 3,
+              actionability_score: wallet.rank <= 10 ? 5 : (netWorth > 1000000 ? 4 : 3),
               is_first_mover: false,
               vertical_tag: wallet.vertical,
               common_neighbors: 0,
               display_name: fc_info.display_name || null,
               persona: wallet.persona || null,
+              wallet_net_worth: netWorth,
+              token_flow: tokenFlow,
               fc_username: fc_info.username,
               fc_display_name: fc_info.display_name,
               fc_followers: fc_info.follower_count,
@@ -236,7 +273,7 @@ export const pollWhaleActivity = action({
           }
         }
         // Small delay between batches to be safe
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 1100));
       }
     } catch (e) { console.error("Poll Failed", e); }
   },
@@ -247,6 +284,45 @@ export const getCohort = query({
   handler: async (ctx) => {
     return await ctx.db.query("cohorts").collect();
   }
+});
+
+export const fetchGrowthRate = action({
+    args: { targetContract: v.string(), signalId: v.id("signals") },
+    handler: async (ctx, args) => {
+        const apiKey = process.env.ALLIUM_API_KEY;
+        const queryId = process.env.ALLIUM_QUERY_ID;
+        if (!apiKey || !queryId) return;
+
+        const sql = "WITH user_counts AS (SELECT COUNT(DISTINCT from_address) as current_users FROM base.raw.transactions WHERE to_address = LOWER('" + args.targetContract + "') AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '24 HOUR'), prev_user_counts AS (SELECT COUNT(DISTINCT from_address) as prev_users FROM base.raw.transactions WHERE to_address = LOWER('" + args.targetContract + "') AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '48 HOUR' AND block_timestamp < CURRENT_TIMESTAMP - INTERVAL '24 HOUR') SELECT CASE WHEN prev_users = 0 THEN 100 ELSE ((current_users - prev_users) * 100.0 / prev_users) END as growth_rate FROM user_counts, prev_user_counts";
+
+        try {
+            const runRes = await fetch("https://api.allium.so/api/v1/explorer/queries/" + queryId + "/run-async", {
+                method: "POST",
+                headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+                body: JSON.stringify({ parameters: { sql_query: sql } }),
+            });
+            if (!runRes.ok) return;
+            const { run_id: runId } = await runRes.json();
+            
+            for (let i = 0; i < 5; i++) {
+                await new Promise(r => setTimeout(r, 2000));
+                const status = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/status", { headers: { "X-API-KEY": apiKey } })).text()).replace(/"/g, '');
+                if (status === 'success') {
+                    const results = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/results?f=json", { headers: { "X-API-KEY": apiKey } })).json()).data || [];
+                    const growthRate = results[0]?.growth_rate || 0;
+                    await ctx.runMutation(api.allium.updateGrowthRate, { signalId: args.signalId, growthRate });
+                    return;
+                }
+            }
+        } catch (e) { console.error("Growth Rate Failed", e); }
+    }
+});
+
+export const updateGrowthRate = mutation({
+    args: { signalId: v.id("signals"), growthRate: v.number() },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.signalId, { contract_growth_rate: args.growthRate });
+    }
 });
 
 export const findLookalikeAudience = action({

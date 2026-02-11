@@ -73,39 +73,9 @@ ORDER BY total_usd_accumulated DESC
 LIMIT 3
 `;
 
-// ─── SocialFi Whale SQL ──────────────────────────────────────────────────────
-// Finds the top 3 wallets by interaction count with Farcaster protocol
-// contracts on Base in the last 30 days.
-//
-// Farcaster contract addresses:
-//   IdRegistry:      0x00000000Fc6c5F01Fc30151999387Bb99A9f489b
-//   KeyRegistry:     0x00000000fc1237824fb747abde0ff18318d68a28
-//   StorageRegistry: 0x00000000fC04c910A0b5feA33b03E0447AD0B0aA
-
-export const SOCIALFI_WHALE_SQL = `
-SELECT
-    from_address                           AS wallet_address,
-    COUNT(*)                               AS interaction_count,
-    COUNT(DISTINCT to_address)             AS unique_contracts_touched,
-    COUNT(DISTINCT DATE(block_timestamp))  AS active_days,
-    MAX(block_timestamp)                   AS last_active
-FROM base.raw.transactions
-WHERE block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '30 DAY'
-  AND LOWER(to_address) IN (
-      '0x00000000fc6c5f01fc30151999387bb99a9f489b',  -- IdRegistry
-      '0x00000000fc1237824fb747abde0ff18318d68a28',  -- KeyRegistry
-      '0x00000000fc04c910a0b5fea33b03e0447ad0b0aa'  -- StorageRegistry
-  )
-  AND receipt_status = 1
-GROUP BY from_address
-HAVING COUNT(*) > 50
-ORDER BY interaction_count DESC
-LIMIT 3
-`;
-
 // ─── SQL Map ─────────────────────────────────────────────────────────────────
 
-export type Vertical = 'DeFi' | 'AI' | 'SocialFi';
+export type Vertical = 'DeFi' | 'AI';
 
 export const SQL_TEMPLATES: Record<Vertical, { sql: string; description: string }> = {
     DeFi: {
@@ -115,9 +85,5 @@ export const SQL_TEMPLATES: Record<Vertical, { sql: string; description: string 
     AI: {
         sql: AI_WHALE_SQL,
         description: 'Top 3 AI token accumulators — VIRTUAL & OLAS (>$100k 30d inflow)',
-    },
-    SocialFi: {
-        sql: SOCIALFI_WHALE_SQL,
-        description: 'Top 3 Farcaster power users by contract interactions (>50 txns 30d)',
-    },
+    }
 };
