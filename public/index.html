@@ -215,13 +215,181 @@
                     font-weight: 500;
                 }
         
-                .header-right {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                }
+                        .header-right {
         
-                /* ─── Connection Indicator ───────────────────────── */
+                            display: flex;
+        
+                            align-items: center;
+        
+                            gap: 20px;
+        
+                        }
+        
+                
+        
+                        .attribution {
+        
+                            font-size: 13px;
+        
+                            color: var(--text-muted);
+        
+                            background: rgba(255, 255, 255, 0.03);
+        
+                            padding: 8px 16px;
+        
+                            border-radius: 100px;
+        
+                            border: 1px solid var(--border);
+        
+                        }
+        
+                
+        
+                        .attribution a {
+        
+                            color: var(--text-secondary);
+        
+                            text-decoration: none;
+        
+                            font-weight: 700;
+        
+                            transition: color 0.2s;
+        
+                        }
+        
+                
+        
+                        .attribution a:hover {
+        
+                            color: var(--accent-blue);
+        
+                        }
+        
+                
+        
+                        .github-link {
+        
+                            display: flex;
+        
+                            align-items: center;
+        
+                            justify-content: center;
+        
+                            width: 36px;
+        
+                            height: 36px;
+        
+                            background: var(--bg-card);
+        
+                            border: 1px solid var(--border);
+        
+                            border-radius: 50%;
+        
+                            color: var(--text-secondary);
+        
+                            transition: all 0.2s;
+        
+                        }
+        
+                
+        
+                        .github-link:hover {
+        
+                            color: var(--text-primary);
+        
+                            border-color: var(--text-primary);
+        
+                            transform: scale(1.1);
+        
+                        }
+        
+                
+        
+                        /* ─── Tracked Protocols Row ──────────────────────── */
+        
+                        .tracked-row {
+        
+                            display: flex;
+        
+                            align-items: center;
+        
+                            gap: 16px;
+        
+                            margin-bottom: 24px;
+        
+                            flex-wrap: wrap;
+        
+                        }
+        
+                
+        
+                        .tracked-label {
+        
+                            font-size: 12px;
+        
+                            font-weight: 700;
+        
+                            color: var(--text-muted);
+        
+                            text-transform: uppercase;
+        
+                            letter-spacing: 0.1em;
+        
+                        }
+        
+                
+        
+                        .protocol-pill {
+        
+                            display: flex;
+        
+                            align-items: center;
+        
+                            gap: 6px;
+        
+                            padding: 4px 12px;
+        
+                            background: var(--bg-card);
+        
+                            border: 1px solid var(--border);
+        
+                            border-radius: 100px;
+        
+                            font-size: 13px;
+        
+                            color: var(--text-secondary);
+        
+                        }
+        
+                
+        
+                        .protocol-pill.defi { border-color: rgba(59, 130, 246, 0.3); }
+        
+                        .protocol-pill.ai { border-color: rgba(168, 85, 247, 0.3); }
+        
+                        
+        
+                        .protocol-dot {
+        
+                            width: 6px;
+        
+                            height: 6px;
+        
+                            border-radius: 50%;
+        
+                        }
+        
+                
+        
+                        .protocol-dot.defi { background: var(--accent-blue); }
+        
+                        .protocol-dot.ai { background: var(--accent-purple); }
+        
+                
+        
+                        /* ─── Connection Indicator ───────────────────────── */
+        
+                
                 .connection-indicator {
                     display: flex;
                     align-items: center;
@@ -717,23 +885,39 @@
                             <p>Insight Engine · Marketing Signals · Base Chain</p>
                         </div>
                     </div>
-                    <div class="header-right">
-                        <div class="help-icon" onclick="toggleExplainer()" title="How it works">?</div>
-                        <div class="connection-indicator">
-                            <div class="pulse-dot"></div>
-                            <span id="status-text">Live Connection</span>
-                        </div>
-                    </div>
-                </header>
-        
-                <!-- Filter Bar -->
-                <div class="filter-bar">
-                    <button class="filter-btn active" onclick="setFilter('All')">All Signals</button>
-                    <button class="filter-btn" onclick="setFilter('DeFi')">DeFi</button>
-                    <button class="filter-btn" onclick="setFilter('AI')">AI</button>
-                </div>
-        
-                <!-- Wallets Grid -->
+                                <div class="header-right">
+                                    <div class="attribution">
+                                        made with <a href="https://allium.so" target="_blank">Allium</a> & <a href="https://convex.dev" target="_blank">Convex</a>
+                                    </div>
+                                    <a href="https://github.com" target="_blank" class="github-link" title="View Source on GitHub">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                                    </a>
+                                    <div class="help-icon" onclick="toggleExplainer()" title="How it works">?</div>
+                                    <div class="connection-indicator">
+                                        <div class="pulse-dot"></div>
+                                        <span id="status-text">Live Connection</span>
+                                    </div>
+                                </div>
+                            </header>
+                    
+                            <!-- Filter Bar & Tracked Row -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; gap: 20px; flex-wrap: wrap;">
+                                <div class="filter-bar" style="margin-bottom: 0;">
+                                    <button class="filter-btn active" onclick="setFilter('All')">All Signals</button>
+                                    <button class="filter-btn" onclick="setFilter('DeFi')">DeFi</button>
+                                    <button class="filter-btn" onclick="setFilter('AI')">AI</button>
+                                </div>
+                    
+                                <div class="tracked-row">
+                                    <span class="tracked-label">Monitoring:</span>
+                                    <div class="protocol-pill defi"><div class="protocol-dot defi"></div> Aerodrome</div>
+                                    <div class="protocol-pill defi"><div class="protocol-dot defi"></div> Uniswap V3</div>
+                                    <div class="protocol-pill defi"><div class="protocol-dot defi"></div> Morpho Blue</div>
+                                    <div class="protocol-pill ai"><div class="protocol-dot ai"></div> Virtuals</div>
+                                    <div class="protocol-pill ai"><div class="protocol-dot ai"></div> Autonolas</div>
+                                </div>
+                            </div>
+                                    <!-- Wallets Grid -->
                 <div class="wallets-container">
                     <div class="section-header">
                         <div class="section-title">📍 Active Discovery Cohort: Feb 2026 <span class="count-pill" id="wallet-count">100</span>
