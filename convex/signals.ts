@@ -14,7 +14,7 @@ export const addSignal = mutation({
     id: v.string(),
     type: v.literal("NEW_CONTRACT"),
     wallet: v.string(),
-    vertical: v.union(v.literal("DeFi"), v.literal("AI")),
+    vertical: v.union(v.literal("DeFi"), v.literal("AI"), v.literal("Social")),
     transaction_hash: v.string(),
     target_contract: v.string(),
     timestamp: v.string(),
