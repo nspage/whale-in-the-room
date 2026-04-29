@@ -5,7 +5,7 @@ const crons = cronJobs();
 
 crons.interval(
   "poll-allium-whale-activity",
-  { minutes: 2 },
+  { minutes: 10 },
   api.allium.pollWhaleActivity,
 );
 

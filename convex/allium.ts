@@ -52,30 +52,46 @@ export const refreshCohort = action({
     let totalAdded = 0;
 
     for (const v of verticals) {
-      console.log("Discovering Top 50 " + v.name + " wallets...");
+      console.log(`Discovering Top 50 ${v.name} wallets...`);
       
-      const runRes = await fetch("https://api.allium.so/api/v1/explorer/queries/" + queryId + "/run-async", {
+      const runRes = await fetch(`https://api.allium.so/api/v1/explorer/queries/${queryId}/run-async`, {
         method: "POST",
         headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({ parameters: { sql_query: v.sql } }),
       });
 
-      if (!runRes.ok) continue;
+      if (!runRes.ok) {
+        const errorText = await runRes.text();
+        throw new Error(`Failed to start Allium discovery query for ${v.name}: ${runRes.status} ${errorText}`);
+      }
+      
       const { run_id: runId } = await runRes.json();
 
       // Poll for results (max 30s)
       let results = [];
       for (let i = 0; i < 10; i++) {
         await new Promise(r => setTimeout(r, 3000));
-        const status = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/status", {
+        const statusRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/status`, {
           headers: { "X-API-KEY": apiKey }
-        })).text()).replace(/"/g, '');
+        });
+        
+        if (!statusRes.ok) {
+           console.warn(`Failed to poll status for run ${runId}: ${statusRes.status}`);
+           continue;
+        }
+
+        const status = (await statusRes.text()).replace(/"/g, '');
         
         if (status === 'success') {
-          results = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/results?f=json", {
+          const resultsRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/results?f=json`, {
             headers: { "X-API-KEY": apiKey }
-          })).json()).data || [];
+          });
+          if (!resultsRes.ok) throw new Error(`Failed to fetch results for ${v.name}: ${resultsRes.status}`);
+          
+          results = (await resultsRes.json()).data || [];
           break;
+        } else if (status === 'failed') {
+          throw new Error(`Allium query for ${v.name} failed during execution.`);
         }
       }
 
@@ -143,10 +159,16 @@ export const pollWhaleActivity = action({
     // 2. Batch Fetch Farcaster Identities
     const fcMap = new Map();
     try {
-      const addresses = wallets.slice(0, 100).map(w => "'" + w.address.toLowerCase() + "'").join(',');
-      const sql = "SELECT custody_address, verified_addresses, fname as username, display_name, follower_count FROM base.social.farcaster_profiles WHERE custody_address IN (" + addresses + ") OR verified_addresses LIKE ANY (ARRAY[" + wallets.slice(0,10).map(w => "'%" + w.address.toLowerCase() + "%'").join(',') + "])";
+      const addresses = wallets.map(w => `'${w.address.toLowerCase()}'`).join(',');
+      // Improved SQL: Remove 'LIKE ANY' slice and check all cohort wallets
+      const sql = `
+        SELECT custody_address, verified_addresses, fname as username, display_name, follower_count 
+        FROM base.social.farcaster_profiles 
+        WHERE custody_address IN (${addresses}) 
+           OR verified_addresses LIKE ANY (ARRAY[${wallets.map(w => `'%${w.address.toLowerCase()}%'`).join(',')}])
+      `;
 
-      const sqlRunRes = await fetch("https://api.allium.so/api/v1/explorer/queries/" + queryId + "/run-async", {
+      const sqlRunRes = await fetch(`https://api.allium.so/api/v1/explorer/queries/${queryId}/run-async`, {
         method: "POST",
         headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({ parameters: { sql_query: sql } }),
@@ -156,9 +178,9 @@ export const pollWhaleActivity = action({
         const { run_id: runId } = await sqlRunRes.json();
         for (let i = 0; i < 5; i++) {
           await new Promise(r => setTimeout(r, 2000));
-          const status = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/status", { headers: { "X-API-KEY": apiKey } })).text()).replace(/"/g, '');
+          const status = (await (await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/status`, { headers: { "X-API-KEY": apiKey } })).text()).replace(/"/g, '');
           if (status === 'success') {
-            const results = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/results?f=json", { headers: { "X-API-KEY": apiKey } })).json()).data || [];
+            const results = (await (await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/results?f=json`, { headers: { "X-API-KEY": apiKey } })).json()).data || [];
             results.forEach((row: any) => {
                 wallets.forEach(w => {
                     const addr = w.address.toLowerCase();
@@ -170,8 +192,12 @@ export const pollWhaleActivity = action({
             break;
           }
         }
+      } else {
+        console.warn(`Farcaster identity lookup failed: ${sqlRunRes.status}`);
       }
-    } catch (e) { console.error("FC Batch Failed", e); }
+    } catch (e) { 
+      console.error("Farcaster Batch Identity Enrichment Failed", e); 
+    }
 
     // 3. Batch Polling for Transactions & Balances
     const netWorthMap = new Map();
@@ -190,6 +216,8 @@ export const pollWhaleActivity = action({
             const total = (item.tokens || []).reduce((acc: number, t: any) => acc + (t.usd_value || 0), 0);
             netWorthMap.set(item.address.toLowerCase(), total);
           });
+        } else {
+          console.warn(`Balance poll batch failed: ${balRes.status}`);
         }
         await new Promise(r => setTimeout(r, 1100)); // Rate limit safety
       }
@@ -203,7 +231,7 @@ export const pollWhaleActivity = action({
       }
 
       for (const batch of batches) {
-        console.log("Polling batch of " + batch.length + " wallets...");
+        console.log(`Polling transactions for batch of ${batch.length} wallets...`);
         const pollRes = await fetch("https://api.allium.so/api/v1/developer/wallet/transactions", {
           method: "POST",
           headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
@@ -211,13 +239,12 @@ export const pollWhaleActivity = action({
         });
 
         if (!pollRes.ok) {
-          console.error("Batch poll failed: " + await pollRes.text());
-          continue;
+          throw new Error(`Transaction poll failed: ${pollRes.status} ${await pollRes.text()}`);
         }
 
         const data = await pollRes.json();
         const transactions = data.items || [];
-        console.log("Received " + transactions.length + " transactions for batch.");
+        console.log(`Received ${transactions.length} transactions for batch.`);
         
         // Group transactions by wallet
         const txByWallet = new Map();
@@ -233,6 +260,11 @@ export const pollWhaleActivity = action({
           const netWorth = netWorthMap.get(wallet.address.toLowerCase()) || 0;
 
           for (const tx of walletTx) {
+            // Gap 2b: Filter self-transactions (Wallet is the target)
+            if (tx.to_address && tx.to_address.toLowerCase() === wallet.address.toLowerCase()) {
+              continue;
+            }
+
             // Parse Token Flow
             let tokenFlow = "";
             if (tx.token_transfers && tx.token_transfers.length > 0) {
@@ -244,8 +276,7 @@ export const pollWhaleActivity = action({
                 ).join(" & ");
             }
 
-            // Growth rate will be fetched asynchronously or via a separate process to avoid blocking
-            // For now, we fire the mutation and let it enrich if possible
+            // Fire mutation for storage and enrichment
             await ctx.runMutation(api.signals.addSignal, {
               id: "convex-" + tx.hash.slice(0, 10),
               type: "NEW_CONTRACT",
@@ -259,7 +290,7 @@ export const pollWhaleActivity = action({
               vertical_tag: wallet.vertical,
               common_neighbors: 0,
               display_name: fc_info.display_name || null,
-              persona: wallet.persona || null,
+              persona: wallet.persona || null, // Persona correctly passed from cohort
               wallet_net_worth: netWorth,
               token_flow: tokenFlow,
               fc_username: fc_info.username,
@@ -272,10 +303,13 @@ export const pollWhaleActivity = action({
             });
           }
         }
-        // Small delay between batches to be safe
+        // Small delay between batches to respect 1 req/sec limit
         await new Promise(r => setTimeout(r, 1100));
       }
-    } catch (e) { console.error("Poll Failed", e); }
+    } catch (e) { 
+      console.error("Poll Whale Activity Logic Failed", e); 
+      throw e; // Ensure it surfaces in Convex logs
+    }
   },
 });
 
@@ -293,10 +327,26 @@ export const fetchGrowthRate = action({
         const queryId = process.env.ALLIUM_QUERY_ID;
         if (!apiKey || !queryId) return;
 
-        const sql = "WITH user_counts AS (SELECT COUNT(DISTINCT from_address) as current_users FROM base.raw.transactions WHERE to_address = LOWER('" + args.targetContract + "') AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '24 HOUR'), prev_user_counts AS (SELECT COUNT(DISTINCT from_address) as prev_users FROM base.raw.transactions WHERE to_address = LOWER('" + args.targetContract + "') AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '48 HOUR' AND block_timestamp < CURRENT_TIMESTAMP - INTERVAL '24 HOUR') SELECT CASE WHEN prev_users = 0 THEN 100 ELSE ((current_users - prev_users) * 100.0 / prev_users) END as growth_rate FROM user_counts, prev_user_counts";
+        const sql = `
+          WITH user_counts AS (
+            SELECT COUNT(DISTINCT from_address) as current_users 
+            FROM base.raw.transactions 
+            WHERE to_address = LOWER('${args.targetContract}') 
+              AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '24 HOUR'
+          ), 
+          prev_user_counts AS (
+            SELECT COUNT(DISTINCT from_address) as prev_users 
+            FROM base.raw.transactions 
+            WHERE to_address = LOWER('${args.targetContract}') 
+              AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '48 HOUR' 
+              AND block_timestamp < CURRENT_TIMESTAMP - INTERVAL '24 HOUR'
+          ) 
+          SELECT CASE WHEN prev_users = 0 THEN 100 ELSE ((current_users - prev_users) * 100.0 / prev_users) END as growth_rate 
+          FROM user_counts, prev_user_counts
+        `;
 
         try {
-            const runRes = await fetch("https://api.allium.so/api/v1/explorer/queries/" + queryId + "/run-async", {
+            const runRes = await fetch(`https://api.allium.so/api/v1/explorer/queries/${queryId}/run-async`, {
                 method: "POST",
                 headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
                 body: JSON.stringify({ parameters: { sql_query: sql } }),
@@ -306,15 +356,20 @@ export const fetchGrowthRate = action({
             
             for (let i = 0; i < 5; i++) {
                 await new Promise(r => setTimeout(r, 2000));
-                const status = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/status", { headers: { "X-API-KEY": apiKey } })).text()).replace(/"/g, '');
+                const statusRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/status`, { headers: { "X-API-KEY": apiKey } });
+                if (!statusRes.ok) continue;
+                const status = (await statusRes.text()).replace(/"/g, '');
+                
                 if (status === 'success') {
-                    const results = (await (await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/results?f=json", { headers: { "X-API-KEY": apiKey } })).json()).data || [];
+                    const resultsRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/results?f=json`, { headers: { "X-API-KEY": apiKey } });
+                    if (!resultsRes.ok) return;
+                    const results = (await resultsRes.json()).data || [];
                     const growthRate = results[0]?.growth_rate || 0;
                     await ctx.runMutation(api.allium.updateGrowthRate, { signalId: args.signalId, growthRate });
                     return;
                 }
             }
-        } catch (e) { console.error("Growth Rate Failed", e); }
+        } catch (e) { console.error("Growth Rate Calculation Failed", e); }
     }
 });
 
@@ -327,7 +382,7 @@ export const updateGrowthRate = mutation({
 
 export const findLookalikeAudience = action({
   args: {
-    targetContract: v.string(),
+    target_contract: v.string(),
   },
   handler: async (ctx, args) => {
     const apiKey = process.env.ALLIUM_API_KEY;
@@ -336,11 +391,30 @@ export const findLookalikeAudience = action({
       throw new Error("ALLIUM_API_KEY or ALLIUM_QUERY_ID environment variable is not set");
     }
 
-    const sql = "WITH contract_interactors AS (SELECT DISTINCT from_address as wallet_address FROM base.raw.transactions WHERE LOWER(to_address) = LOWER('" + args.targetContract + "') AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '7 DAY'), wallet_volume AS (SELECT from_address as wallet_address, SUM(usd_amount) as total_volume_usd FROM base.assets.erc20_token_transfers WHERE block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '30 DAY' GROUP BY from_address) SELECT ci.wallet_address, wv.total_volume_usd FROM contract_interactors ci JOIN wallet_volume wv ON ci.wallet_address = wv.wallet_address WHERE wv.total_volume_usd > 10000 ORDER BY wv.total_volume_usd DESC LIMIT 50";
+    const sql = `
+      WITH contract_interactors AS (
+        SELECT DISTINCT from_address as wallet_address 
+        FROM base.raw.transactions 
+        WHERE LOWER(to_address) = LOWER('${args.target_contract}') 
+          AND block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '7 DAY'
+      ), 
+      wallet_volume AS (
+        SELECT from_address as wallet_address, SUM(usd_amount) as total_volume_usd 
+        FROM base.assets.erc20_token_transfers 
+        WHERE block_timestamp >= CURRENT_TIMESTAMP - INTERVAL '30 DAY' 
+        GROUP BY from_address
+      ) 
+      SELECT ci.wallet_address, wv.total_volume_usd 
+      FROM contract_interactors ci 
+      JOIN wallet_volume wv ON ci.wallet_address = wv.wallet_address 
+      WHERE wv.total_volume_usd > 10000 
+      ORDER BY wv.total_volume_usd DESC 
+      LIMIT 50
+    `;
 
-    console.log("Finding lookalike audience for contract: " + args.targetContract);
+    console.log(`Finding lookalike audience for contract: ${args.target_contract}`);
 
-    const runResponse = await fetch("https://api.allium.so/api/v1/explorer/queries/" + queryId + "/run-async", {
+    const runResponse = await fetch(`https://api.allium.so/api/v1/explorer/queries/${queryId}/run-async`, {
       method: "POST",
       headers: {
         "X-API-KEY": apiKey,
@@ -350,44 +424,119 @@ export const findLookalikeAudience = action({
     });
 
     if (!runResponse.ok) {
-      throw new Error("Failed to start Allium query: " + await runResponse.text());
+      throw new Error(`Failed to start Allium query for lookalike audience: ${runResponse.status} ${await runResponse.text()}`);
     }
 
     const { run_id: runId } = await runResponse.json();
 
     // Poll for results
-    let results = [];
+    let results: any[] = [];
     for (let i = 0; i < 10; i++) {
       await new Promise((r) => setTimeout(r, 3000));
-      const statusRes = await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/status", {
+      const statusRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/status`, {
         headers: { "X-API-KEY": apiKey },
       });
+      if (!statusRes.ok) continue;
       const status = (await statusRes.text()).replace(/"/g, "");
 
       if (status === "success") {
-        const resultRes = await fetch("https://api.allium.so/api/v1/explorer/query-runs/" + runId + "/results?f=json", {
+        const resultRes = await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/results?f=json`, {
           headers: { "X-API-KEY": apiKey },
         });
+        if (!resultRes.ok) break;
         const resultData = await resultRes.json();
         results = resultData.data || [];
         break;
       }
       if (status === "failed") {
-        throw new Error("Allium query failed");
+        throw new Error("Allium lookalike audience query failed during execution.");
       }
     }
 
     if (results.length > 0) {
       await ctx.runMutation(api.signals.saveTargetAudience, {
-        target_contract: args.targetContract,
+        target_contract: args.target_contract,
         wallets: results.map((r: any) => ({
           wallet_address: r.wallet_address,
           total_volume_usd: Number(r.total_volume_usd),
         })),
       });
-      console.log("Saved " + results.length + " lookalike wallets for " + args.targetContract);
+      console.log(`Saved ${results.length} lookalike wallets for ${args.target_contract}`);
     }
 
     return results;
   },
+});
+
+export const retroactiveSocialEnrichment = action({
+  args: {},
+  handler: async (ctx) => {
+    const apiKey = process.env.ALLIUM_API_KEY;
+    const queryId = process.env.ALLIUM_QUERY_ID;
+    if (!apiKey || !queryId) return;
+
+    // 1. Find signals with missing social data (last 100)
+    const signals = await ctx.runQuery(api.signals.list);
+    const missingSocial = signals.filter(s => s.fc_username === undefined || s.fc_username === null);
+    
+    if (missingSocial.length === 0) return { count: 0 };
+
+    // 2. Extract unique wallets
+    const walletSet = new Set<string>(missingSocial.map(s => s.wallet.toLowerCase()));
+    const wallets: string[] = Array.from(walletSet);
+    
+    console.log(`Attempting retroactive enrichment for ${wallets.length} unique wallets...`);
+
+    // 3. Batch lookup Farcaster identities (Single SQL run)
+    const fcMap = new Map<string, any>();
+    const addresses = wallets.map(addr => `'${addr}'`).join(',');
+    const sql = `
+      SELECT custody_address, verified_addresses, fname as username, display_name, follower_count 
+      FROM base.social.farcaster_profiles 
+      WHERE custody_address IN (${addresses}) 
+         OR verified_addresses LIKE ANY (ARRAY[${wallets.map(addr => `'%${addr}%'`).join(',')}])
+    `;
+
+    const runRes = await fetch(`https://api.allium.so/api/v1/explorer/queries/${queryId}/run-async`, {
+      method: "POST",
+      headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ parameters: { sql_query: sql } }),
+    });
+
+    if (runRes.ok) {
+      const { run_id: runId } = await runRes.json();
+      for (let i = 0; i < 5; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        const status = (await (await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/status`, { headers: { "X-API-KEY": apiKey } })).text()).replace(/"/g, '');
+        if (status === 'success') {
+          const results = (await (await fetch(`https://api.allium.so/api/v1/explorer/query-runs/${runId}/results?f=json`, { headers: { "X-API-KEY": apiKey } })).json()).data || [];
+          results.forEach((row: any) => {
+              wallets.forEach(addr => {
+                  if (row.custody_address?.toLowerCase() === addr || row.verified_addresses?.toLowerCase().includes(addr)) {
+                      fcMap.set(addr, row);
+                  }
+              });
+          });
+          break;
+        }
+      }
+    }
+
+    // 4. Update signals
+    let updatedCount = 0;
+    for (const s of missingSocial) {
+        const fc_info = fcMap.get(s.wallet.toLowerCase());
+        if (fc_info) {
+            await ctx.runMutation(api.signals.updateSignalSocial, {
+                signalId: s._id,
+                fc_username: fc_info.username,
+                fc_display_name: fc_info.display_name,
+                fc_followers: fc_info.follower_count,
+            });
+            updatedCount++;
+        }
+    }
+
+    return { totalChecked: wallets.length, totalUpdated: updatedCount };
+  }
 });

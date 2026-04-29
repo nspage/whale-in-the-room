@@ -14,7 +14,8 @@ export const addSignal = mutation({
     id: v.string(),
     type: v.literal("NEW_CONTRACT"),
     wallet: v.string(),
-            vertical: v.union(v.literal("DeFi"), v.literal("AI")),    transaction_hash: v.string(),
+    vertical: v.union(v.literal("DeFi"), v.literal("AI")),
+    transaction_hash: v.string(),
     target_contract: v.string(),
     timestamp: v.string(),
     actionability_score: v.number(),
@@ -46,7 +47,12 @@ export const addSignal = mutation({
 
     if (existingTx) return;
 
-    // 2. Signal A Logic: Is this a NEW contract for this wallet?
+    // 2. Gap 2b: Filter self-transactions (Whale interacting with itself)
+    if (args.wallet.toLowerCase() === args.target_contract.toLowerCase()) {
+      return;
+    }
+
+    // 3. Signal A Logic: Is this a NEW contract for this wallet?
     const seenBefore = await ctx.db
       .query("signals")
       .withIndex("by_wallet", (q) => q.eq("wallet", args.wallet))
@@ -56,7 +62,7 @@ export const addSignal = mutation({
     // If we've seen this wallet hit this contract before, it's not a "New Contract" signal
     if (seenBefore) return;
 
-    // 3. Enrichment: Calculate Common Neighbors (other whales who hit this)
+    // 4. Enrichment: Calculate Common Neighbors (other whales who hit this)
     const neighbors = await ctx.db
       .query("signals")
       .withIndex("by_target_contract", (q) => q.eq("target_contract", args.target_contract))
@@ -66,18 +72,18 @@ export const addSignal = mutation({
     uniqueWallets.delete(args.wallet);
     args.common_neighbors = uniqueWallets.size;
 
-    // 4. Enrichment: Check if First Mover (first one in our cohort to hit it)
+    // 5. Enrichment: Check if First Mover (first one in our cohort to hit it)
     args.is_first_mover = neighbors.length === 0;
 
     const signalId = await ctx.db.insert("signals", args);
 
-    // 5. Trigger Async Enrichment: Growth Rate
+    // 6. Trigger Async Enrichment: Growth Rate
     await ctx.scheduler.runAfter(0, api.allium.fetchGrowthRate, {
         targetContract: args.target_contract,
         signalId: signalId
     });
 
-    // 6. Trigger Telegram Notification (only for high-value ranks)
+    // 7. Trigger Telegram Notification (only for high-value ranks)
     if (args.actionability_score >= 4) {
         await ctx.scheduler.runAfter(0, api.notifications.sendTelegramAlert, {
           whaleName: args.display_name || args.context.wallet_label,
@@ -86,9 +92,9 @@ export const addSignal = mutation({
         });
     }
 
-    // 7. Trigger Audience Expansion (Lookalike SQL)
+    // 8. Trigger Audience Expansion (Lookalike SQL)
     await ctx.scheduler.runAfter(0, api.allium.findLookalikeAudience, {
-      targetContract: args.target_contract,
+      target_contract: args.target_contract,
     });
   },
 });
@@ -134,4 +140,29 @@ export const listTargetAudience = query({
       .order("desc")
       .take(50);
   },
+});
+
+export const clearStaleSignals = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const signals = await ctx.db.query("signals").take(500);
+    for (const s of signals) await ctx.db.delete(s._id);
+    return { count: signals.length };
+  },
+});
+
+export const updateSignalSocial = mutation({
+    args: {
+        signalId: v.id("signals"),
+        fc_username: v.optional(v.string()),
+        fc_display_name: v.optional(v.string()),
+        fc_followers: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.signalId, {
+            fc_username: args.fc_username,
+            fc_display_name: args.fc_display_name,
+            fc_followers: args.fc_followers,
+        });
+    }
 });

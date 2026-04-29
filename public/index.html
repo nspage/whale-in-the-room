@@ -110,6 +110,7 @@
             margin-bottom: 24px;
             background: var(--gradient-defi);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -215,6 +216,7 @@
             letter-spacing: -0.03em;
             background: linear-gradient(to right, #fff, #94a3b8);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -1002,6 +1004,7 @@
                 <button class="filter-btn active" onclick="setFilter('All')">All Signals</button>
                 <button class="filter-btn" onclick="setFilter('DeFi')">DeFi</button>
                 <button class="filter-btn" onclick="setFilter('AI')">AI</button>
+                <button class="filter-btn" onclick="setFilter('Social')">🟣 Farcaster Only</button>
             </div>
 
             <div class="tracked-row">
@@ -1203,10 +1206,14 @@
 
         function renderSignals() {
             const feed = document.getElementById('signal-feed');
-            const filtered = signals.filter(s => currentFilter === 'All' || s.vertical === currentFilter);
+            const filtered = signals.filter(s => {
+                if (currentFilter === 'All') return true;
+                if (currentFilter === 'Social') return s.fc_username != null;
+                return s.vertical === currentFilter;
+            });
 
             if (filtered.length === 0) {
-                feed.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">Waiting for new ${currentFilter} signals from the blockchain...</div>`;
+                feed.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">No ${currentFilter === 'Social' ? 'Farcaster' : currentFilter} signals found in this batch...</div>`;
                 return;
             }
 
