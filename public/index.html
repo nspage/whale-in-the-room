@@ -907,6 +907,11 @@
 <body>
     <div class="ambient"></div>
 
+    <!-- Maintenance Banner -->
+    <div id="maintenance-banner" style="background: rgba(234, 179, 8, 0.1); border-bottom: 1px solid rgba(234, 179, 8, 0.3); padding: 12px; text-align: center; color: #fbbf24; font-size: 14px; font-weight: 600; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);">
+        ⚠️ Engine Status: <span style="color: #fff;">Deep Freeze</span> — The real-time discovery loop is currently paused to preserve trial credits. Displayed data is from the last successful scan.
+    </div>
+
     <!-- Explainer Overlay -->
     <div id="explainer-overlay" class="explainer-overlay" onclick="toggleExplainer(event)">
         <div class="explainer-content" onclick="event.stopPropagation()">
@@ -991,8 +996,8 @@
                 </a>
                 <div class="help-icon" onclick="toggleExplainer()" title="How it works">?</div>
                 <div class="connection-indicator">
-                    <div class="pulse-dot"></div>
-                    <span id="status-text">Live Connection</span>
+                    <div class="pulse-dot" style="background: #94a3b8; animation: none;"></div>
+                    <span id="status-text" style="color: #94a3b8;">Deep Freeze</span>
                 </div>
             </div>
         </header>
